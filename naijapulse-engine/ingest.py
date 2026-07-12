@@ -1,5 +1,18 @@
 #!/usr/bin/env python3
 """
+!!! NON-PRIMARY / FALLBACK SCRIPT — DO NOT USE AS THE MAIN INGESTION PATH !!!
+
+This script writes to a LOCAL SQLite mirror (naijapulse_local.db) and is only a
+demo/fallback used when the live Supabase project is unreachable. It is NOT the
+production ingestion path.
+
+>>> THE LIVE PIPELINE USES `ingest_supabase.py` (writes to Supabase Postgres). <<<
+
+Use `ingest_supabase.py` for real runs. Only fall back to this file for local
+experiments when Supabase is down. (Note: `ingest_supabase.py` already carries
+the browser-UA feed-parser fix for the outlets that block feedparser's default
+UA — keep that fix in sync here if you ever actually use this fallback.)
+
 Phase 1 — Ingestion for NaijaPulse Core Engine.
 
 Reads the `sources` table, polls each RSS feed with feedparser, stores the

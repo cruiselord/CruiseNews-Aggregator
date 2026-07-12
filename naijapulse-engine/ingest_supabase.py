@@ -14,6 +14,7 @@ import time
 import hashlib
 from datetime import datetime, timezone
 from typing import Optional, Dict, List, Any
+from urllib.parse import urlparse
 import requests
 from bs4 import BeautifulSoup
 import logging
@@ -56,6 +57,40 @@ SOURCES = [
     {"name": "The Nation", "rss_url": "https://thenationonlineng.net/feed", "homepage_url": "https://thenationonlineng.net"},
     {"name": "BusinessDay", "rss_url": "https://businessday.ng/feed", "homepage_url": "https://businessday.ng"},
 ]
+
+# Several Nigerian outlets (Punch, Vanguard, Guardian NG, The Nation, ...) block
+# feedparser's default User-Agent with a 403 challenge page, which feedparser then
+# fails to parse as XML. Fetch with a browser UA + Accept headers first, then hand
+# the raw bytes to feedparser. Without this, those four feeds return 0 entries.
+BROWSER_HDR = {
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
+                  'AppleWebKit/537.36 (KHTML, like Gecko) '
+                  'Chrome/120.0.0.0 Safari/537.36',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'Accept-Language': 'en-US,en;q=0.9',
+}
+
+
+def _domain_of(url: str) -> str:
+    """Extract the bare host (registered domain) from a URL, for the Google
+    News fallback. Strips a leading 'www.'."""
+    try:
+        netloc = urlparse(url).netloc.lower()
+        if netloc.startswith("www."):
+            netloc = netloc[4:]
+        return netloc
+    except Exception:
+        return ""
+
+
+def google_news_feed_url(domain: str) -> str:
+    """Google News RSS search scoped to a single outlet domain. Used as a
+    fallback when an outlet's own feed is blocked (Cloudflare managed challenge)
+    or serves an empty feed. Returns recent headlines for that outlet without
+    hitting the outlet's bot protection.
+    """
+    return (f"https://news.google.com/rss/search?q=site:{domain}"
+            f"&hl=en-NG&gl=NG&ceid=NG:en")
 
 # ============================================================================
 # Supabase Client Layer
@@ -181,15 +216,27 @@ def compute_hash(text: str) -> str:
     return hashlib.sha256(text.encode('utf-8')).hexdigest()[:16]
 
 def parse_rss_feed(feed_url: str, timeout: int = 30) -> tuple:
-    """Parse RSS feed and return (entries, error)."""
+    """Parse RSS feed and return (entries, error).
+
+    Fetches the feed with a browser User-Agent (several Nigerian outlets block
+    feedparser's default UA with a 403 challenge page) and passes the raw bytes
+    to feedparser, which is far more lenient than parsing a URL directly.
+    """
     try:
-        feed = feedparser.parse(feed_url)
+        resp = requests.get(feed_url, headers=BROWSER_HDR, timeout=timeout)
+        if resp.status_code != 200:
+            return None, f"http_{resp.status_code}"
+        feed = feedparser.parse(resp.content)
         if feed.bozo:
-            logger.warning(f"Feed parse error for {feed_url}: {feed.bozo_exception}")
-            return None, str(feed.bozo_exception)
+            logger.warning(f"Feed parse warning for {feed_url}: {feed.bozo_exception}")
         if not feed.entries:
-            return None, "No entries found"
+            # Likely a challenge/HTML page rather than real XML.
+            return None, "no_entries"
         return feed.entries, None
+    except requests.exceptions.Timeout:
+        return None, "timeout"
+    except requests.exceptions.RequestException as e:
+        return None, f"request_error:{e}"
     except Exception as e:
         logger.error(f"Failed to parse feed {feed_url}: {e}")
         return None, str(e)
@@ -296,6 +343,7 @@ class IngestionStats:
     feeds_total: int = 0
     feeds_success: int = 0
     feeds_failed: int = 0
+    feeds_gnews_fallback: int = 0
     articles_total: int = 0
     articles_new: int = 0
     extraction_success: int = 0
@@ -324,6 +372,7 @@ class IngestionStats:
             'feeds_total': self.feeds_total,
             'feeds_success': self.feeds_success,
             'feeds_failed': self.feeds_failed,
+            'feeds_gnews_fallback': self.feeds_gnews_fallback,
             'feed_success_rate': round(self.feed_success_rate, 2),
             'articles_total': self.articles_total,
             'articles_new': self.articles_new,
@@ -364,14 +413,33 @@ def run_ingestion(db: SupabaseDB, sources: List[Dict], summary_only: bool = Fals
             continue
 
         entries, error = parse_rss_feed(rss_url)
+        used_fallback = False
         if error or not entries:
-            logger.error(f"Failed to fetch feed for {source_name}: {error}")
+            # Direct feed blocked (Cloudflare managed challenge) or empty ->
+            # fall back to Google News RSS scoped to this outlet's domain.
+            dom = _domain_of(source.get('homepage_url') or rss_url)
+            if dom:
+                gentries, gerr = parse_rss_feed(google_news_feed_url(dom))
+                if gentries:
+                    entries, error, used_fallback = gentries, None, True
+                    logger.info(f"  direct feed failed ({error}); using Google News fallback for {dom}")
+        if error or not entries:
+            logger.error(f"Failed to fetch feed for {source_name} (direct + GNews): {error}")
             stats.failures.append({'source': source_name, 'reason': error or 'no_entries'})
             stats.feeds_failed += 1
             continue
 
         stats.feeds_success += 1
-        logger.info(f"  Found {len(entries)} entries in feed")
+        if used_fallback:
+            stats.feeds_gnews_fallback += 1
+            logger.info(f"  [Google News] {len(entries)} entries")
+        else:
+            logger.info(f"  Found {len(entries)} entries in feed")
+
+        # Fallback feeds point at news.google.com redirect URLs, so skip
+        # trafilatura full-text extraction (it would fail on the redirect page)
+        # and keep the RSS summary/snippet instead.
+        entry_summary_only = summary_only or used_fallback
 
         for entry in entries[:50]:  # cap per-source to keep run bounded
             stats.articles_total += 1
@@ -380,7 +448,7 @@ def run_ingestion(db: SupabaseDB, sources: List[Dict], summary_only: bool = Fals
                 logger.debug(f"  Skipping duplicate: {entry.get('title', 'No title')}")
                 continue
 
-            article_data, extraction_status = process_entry(entry, source_id, summary_only=summary_only)
+            article_data, extraction_status = process_entry(entry, source_id, summary_only=entry_summary_only)
 
             if extraction_status == "extraction_failed":
                 stats.extraction_failed += 1
@@ -467,6 +535,7 @@ def main():
     print("=" * 60)
     print(f"Feeds polled:           {stats.feeds_total}")
     print(f"Feeds successful:       {stats.feeds_success}")
+    print(f"  via Google News fallback: {stats.feeds_gnews_fallback}")
     print(f"Feeds failed:           {stats.feeds_failed}")
     print(f"Feed success rate:      {stats.feed_success_rate:.1f}% (target: >=90%)")
     print()

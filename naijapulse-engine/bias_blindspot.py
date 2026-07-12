@@ -55,6 +55,23 @@ MIN_SAMPLE_TAGGED = 3
 # A lean is "dominant" (lopsided) at this many articles while another lean has 0.
 DOMINANT_THRESHOLD = 3
 
+# Keywords that mark a story as a POLITICAL topic. Blindspot evaluation only runs
+# on political stories, so sports/entertainment/health/lifestyle items (which
+# contain none of these terms) are never flagged. Substring match against the
+# story's representative_title + member headlines, lowercased.
+POLITICAL_KEYWORDS = (
+    "election", "inec", "government", "govt", "minister", "senate", "policy",
+    "security", "herdsmen", "insurgency", "corruption", "presidency", "president",
+    "governor", "cabinet", "parliament", "legislature", "lawmaker", "lawmakers",
+    "budget", "subsidy", "apc", "pdp", "labour party", "political", "politician",
+    "campaign", "vote", "voting", "polling", "party", "military", "terrorism",
+    "terrorist", "bandit", "bandits", "kidnap", "abduction", "abducted", "police",
+    "army", "nscdc", "dhq", "court", "tribunal", "judiciary", "supreme court",
+    "assembly", "candidate", "democracy", "protest", "strike", "union", "fuel",
+    "naira", "inflation", "central bank", "cbn", "tax", "diplomacy", "ambassador",
+    "embassy", "war", "sanction", "coup", "referendum", "constitution",
+)
+
 
 # --------------------------------------------------------------------------
 # normalization (Stage A)
@@ -124,10 +141,11 @@ def load_and_normalize_source_bias(client) -> Tuple[
 # per-cluster computation (Stages B + C)
 # --------------------------------------------------------------------------
 def compute_cluster(client, sid: str, lean_by_source: Dict[str, str],
-                    vocabulary: Set[str], missing_bias_sources: Set[str]) -> Dict:
+                    vocabulary: Set[str], missing_bias_sources: Set[str],
+                    representative_title: Optional[str] = None) -> Dict:
     """Compute bias_distribution + coverage + blindspot flag for one cluster."""
     members = (client.table("articles")
-               .select("id, source_id")
+               .select("id, source_id, title")
                .eq("cluster_id", sid)
                .is_("canonical_article_id", "null")  # canonical-only
                .execute()
@@ -140,6 +158,7 @@ def compute_cluster(client, sid: str, lean_by_source: Dict[str, str],
     # "independent": 1, "opposition-aligned": 0}).
     counts = {lean: 0 for lean in vocabulary}
     tagged = 0  # canonical articles whose source HAS a source_bias row
+    member_titles = []
 
     for m in members:
         s = m.get("source_id")
@@ -150,40 +169,70 @@ def compute_cluster(client, sid: str, lean_by_source: Dict[str, str],
             continue
         counts[lean] += 1
         tagged += 1
+        t = m.get("title")
+        if t:
+            member_titles.append(t)
 
     # bias_coverage_pct = % of canonical articles with a matching source_bias row
     bias_coverage_pct = (
         round(100.0 * tagged / total_canonical, 2) if total_canonical else 0.0
     )
 
-    is_blindspot = _evaluate_blindspot(counts, tagged)
+    # Topic-relevance gate: blindspot detection only applies to POLITICAL
+    # stories. Build the scan text from the representative title + member
+    # headlines. Sports/entertainment/health/lifestyle stories are excluded
+    # here, BEFORE the blindspot rule runs.
+    scan_text = " ".join(
+        [representative_title or ""] + member_titles
+    )
+    is_political = _is_political_topic(scan_text)
+
+    # Only evaluate the blindspot rule on political stories.
+    is_blindspot = _evaluate_blindspot(counts, tagged) if is_political else False
 
     return {
         "bias_distribution": counts,
         "bias_coverage_pct": bias_coverage_pct,
         "is_blindspot": is_blindspot,
+        "is_political": is_political,
         "total_canonical": total_canonical,
         "tagged": tagged,
     }
 
 
+def _is_political_topic(text: str) -> bool:
+    """Return True if `text` (a story's representative_title + member headlines)
+    looks like a political story. Substring match against POLITICAL_KEYWORDS.
+
+    Stories about sports, entertainment, health, or lifestyle contain none of
+    these terms, so they return False and never reach blindspot evaluation.
+    """
+    if not text:
+        return False
+    low = text.lower()
+    return any(kw in low for kw in POLITICAL_KEYWORDS)
+
+
 def _evaluate_blindspot(counts: Dict[str, int], tagged: int) -> bool:
-    """Blindspot rule (starting threshold — tune after seeing real output):
+    """Blindspot rule (corrected — directional leans ONLY):
 
-    A cluster is a blindspot if, among its canonical articles, ONE lean category
-    has ZERO representation while ANOTHER lean category has >= DOMINANT_THRESHOLD
-    (3) articles. The minimum-sample gate (tagged >= MIN_SAMPLE_TAGGED) must be
-    met first, otherwise we stay silent — we don't make claims we lack the data
-    to support.
+    Compare ONLY the two directional leans, pro_government vs anti_government.
+    `mixed`/`independent` count toward the minimum-sample gate (`tagged >=
+    MIN_SAMPLE_TAGGED`) but are NEVER part of the flag comparison itself.
 
-    With the full-vocabulary `counts` dict, "one lean has zero" is simply
-    min(counts) == 0 and "another has >=3" is max(counts) >= DOMINANT_THRESHOLD.
+    Flag true only if one of {pro_government, anti_government} has
+    >= DOMINANT_THRESHOLD (3) articles while the other has exactly 0.
+
+    The minimum-sample gate must be met first (tagged >= MIN_SAMPLE_TAGGED),
+    otherwise we stay silent — we don't make claims we lack the data to support.
     """
     if tagged < MIN_SAMPLE_TAGGED:
         return False
-    if not counts:
-        return False
-    return max(counts.values()) >= DOMINANT_THRESHOLD and min(counts.values()) == 0
+    pro = counts.get("pro_government", 0)
+    anti = counts.get("anti_government", 0)
+    return (pro >= DOMINANT_THRESHOLD and anti == 0) or (
+        anti >= DOMINANT_THRESHOLD and pro == 0
+    )
 
 
 # --------------------------------------------------------------------------
@@ -205,18 +254,20 @@ def run_bias(client) -> Dict:
                     "buckets: %s", len(vocabulary), sorted(vocabulary))
 
     stories = (client.table("stories")
-               .select("id")
+               .select("id, representative_title")
                .execute()
                .data) or []
     missing_bias_sources: Set[str] = set()
 
     flagged = 0
     below_gate = 0
+    non_political_excluded = 0
     updated = 0
     for st in stories:
         sid = st["id"]
         res = compute_cluster(client, sid, lean_by_source, vocabulary,
-                              missing_bias_sources)
+                              missing_bias_sources,
+                              representative_title=st.get("representative_title"))
         client.table("stories").update({
             "bias_distribution": res["bias_distribution"],
             "bias_coverage_pct": res["bias_coverage_pct"],
@@ -228,6 +279,8 @@ def run_bias(client) -> Dict:
             flagged += 1
         if res["tagged"] < MIN_SAMPLE_TAGGED:
             below_gate += 1
+        if not res["is_political"]:
+            non_political_excluded += 1
 
     if missing_bias_sources:
         logger.warning("Stage B: %d source(s) had canonical articles but NO "
@@ -240,6 +293,7 @@ def run_bias(client) -> Dict:
         "stories_updated": updated,
         "blindspots_flagged": flagged,
         "below_min_sample_gate": below_gate,
+        "non_political_excluded": non_political_excluded,
         "distinct_leans": len(vocabulary),
         "near_duplicate_leans": len(near_dupes),
         "sources_missing_bias": len(missing_bias_sources),
