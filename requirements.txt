@@ -3,3 +3,6 @@ supabase
 python-dotenv
 feedparser
 trafilatura
+# Phase 6 - read-only FastAPI query/API layer
+fastapi
+uvicorn
