@@ -149,21 +149,32 @@ class SupabaseDB:
             logger.error(f"Error checking article existence: {e}")
             return False
 
-    def insert_article(self, article_data: Dict) -> bool:
-        """Insert article into database; tolerates duplicate-key errors."""
+    def insert_article(self, article_data: Dict) -> Optional[str]:
+        """Insert article; return the new row's id, or None on failure/duplicate."""
         try:
             result = self.supabase.table('articles').insert(article_data).execute()
-            return len(result.data) > 0
+            if result.data:
+                return result.data[0].get('id')
+            return None
         except Exception as e:
             if 'duplicate key' in str(e).lower() or 'unique constraint' in str(e).lower():
                 logger.debug(f"Duplicate article skipped: {article_data.get('url', 'unknown')}")
-                return False
+                return None
             logger.error(f"Failed to insert article: {e}")
-            return False
+            return None
 
 # ============================================================================
 # Ingestion Logic
 # ============================================================================
+
+# Phase 2 (embedding) imports — kept local so ingestion doesn't hard-depend on
+# Ollama being importable. Tolerated if the module is missing.
+try:
+    from embed_core import embed_texts, fetch_text, store_embedding, EMBED_MODEL
+    _EMBED_AVAILABLE = True
+except Exception:  # pragma: no cover
+    _EMBED_AVAILABLE = False
+
 
 def compute_hash(text: str) -> str:
     """Compute SHA256 hash of text for content deduplication."""
@@ -293,6 +304,8 @@ class IngestionStats:
     extraction_timeout: int = 0
     extraction_other: int = 0
     failures: List[Dict] = None
+    embedded: int = 0
+    embed_failed: int = 0
 
     def __post_init__(self):
         if self.failures is None:
@@ -320,6 +333,8 @@ class IngestionStats:
             'extraction_timeout': self.extraction_timeout,
             'extraction_other': self.extraction_other,
             'extraction_success_rate': round(self.extraction_success_rate, 2),
+            'embedded': self.embedded,
+            'embed_failed': self.embed_failed,
             'failures': self.failures
         }
 
@@ -378,9 +393,20 @@ def run_ingestion(db: SupabaseDB, sources: List[Dict], summary_only: bool = Fals
             else:
                 stats.extraction_success += 1
 
-            if db.insert_article(article_data):
+            new_id = db.insert_article(article_data)
+            if new_id:
                 stats.articles_new += 1
                 logger.debug(f"  Inserted: {article_data['title'][:50]}...")
+                # Phase 2 (best-effort): embed inline so fresh articles get vectors
+                # without a re-scan. Never fail ingestion if Ollama is down/slow.
+                if _EMBED_AVAILABLE and not db._use_sqlite and db.supabase is not None:
+                    try:
+                        vec = embed_texts([f"{article_data['title']}\n\n{article_data.get('summary') or ''}"])
+                        store_embedding(db.supabase, new_id, vec[0])
+                        stats.embedded += 1
+                    except Exception as e:
+                        stats.embed_failed += 1
+                        logger.warning(f"  Inline embed skipped for new article: {e}")
             else:
                 stats.failures.append({
                     'source': source_name,
@@ -452,6 +478,9 @@ def main():
     print(f"Extraction timeout:     {stats.extraction_timeout}")
     print(f"Extraction other:       {stats.extraction_other}")
     print(f"Extraction success rate: {stats.extraction_success_rate:.1f}% (target: >=70%)")
+    print()
+    print(f"Embedded (inline):      {stats.embedded}")
+    print(f"Embed failed:           {stats.embed_failed}")
     print()
     print(f"Total time:             {elapsed:.1f}s")
 

@@ -53,6 +53,17 @@ create table if not exists public.embeddings (
     created_at  timestamptz default now()
 );
 
+-- One embedding per (article, model). Enables idempotent upserts (Phase 2).
+do $$
+begin
+    if not exists (
+        select 1 from pg_constraint where conname = 'embeddings_article_model_key'
+    ) then
+        alter table public.embeddings
+            add constraint embeddings_article_model_key unique (article_id, model);
+    end if;
+end $$;
+
 create index if not exists idx_embeddings_vector
     on public.embeddings using ivfflat (vector vector_cosine_ops) with (lists = 100);
 
