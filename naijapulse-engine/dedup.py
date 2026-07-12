@@ -251,13 +251,23 @@ def pick_canonical(group: Set[str], client) -> str:
 
 
 def update_db(pending: List[Dict], groups: List[Set[str]],
-              confirmed: List[Tuple[str, str, float, str]], client) -> None:
+              confirmed: List[Tuple[str, str, float, str]],
+              cands: List[Tuple[str, str, float]], client) -> None:
     now = datetime.datetime.now(datetime.timezone.utc).isoformat()
-    # best confirming score per article
+    # best confirming score per article (from confirmed duplicate pairs)
     score_map: Dict[str, float] = {}
     for a, b, score, _ in confirmed:
         score_map[a] = max(score_map.get(a, 0.0), score)
         score_map[b] = max(score_map.get(b, 0.0), score)
+    # best neighbour similarity for EVERY article (so dedup_score is never null):
+    # start at 0.0, raise to the highest candidate cosine, then to any confirming score
+    best: Dict[str, float] = {a["id"]: 0.0 for a in pending}
+    for a_id, b_id, cos in cands:
+        best[a_id] = max(best.get(a_id, 0.0), cos)
+        best[b_id] = max(best.get(b_id, 0.0), cos)
+    for a_id, b_id, score, _ in confirmed:
+        best[a_id] = max(best.get(a_id, 0.0), score)
+        best[b_id] = max(best.get(b_id, 0.0), score)
     # canonical per group
     canonical_of: Dict[str, str] = {}
     for g in groups:
@@ -269,11 +279,13 @@ def update_db(pending: List[Dict], groups: List[Set[str]],
     # never rewrites the whole row so NOT NULL columns like `url` are untouched)
     all_ids = [a["id"] for a in pending]
     client.table("articles").update({"dedup_checked_at": now}).in_("id", all_ids).execute()
-    # set canonical_article_id + dedup_score only on confirmed duplicate members
-    for aid, canon in canonical_of.items():
-        client.table("articles").update(
-            {"canonical_article_id": canon, "dedup_score": score_map.get(aid)}
-        ).eq("id", aid).execute()
+    # set canonical_article_id + dedup_score on confirmed duplicate members;
+    # dedup_score is also written for every other processed article (best neighbour).
+    for aid in all_ids:
+        upd: Dict[str, object] = {"dedup_score": round(best.get(aid, 0.0), 4)}
+        if aid in canonical_of:
+            upd["canonical_article_id"] = canonical_of[aid]
+        client.table("articles").update(upd).eq("id", aid).execute()
     logger.info("Stamped dedup_checked_at on %d articles; set canonical for %d duplicates",
                 len(all_ids), len(canonical_of))
 
@@ -372,7 +384,7 @@ def main() -> int:
     groups = build_groups(confirmed)
     logger.info("Duplicate groups discovered: %d", len(groups))
 
-    update_db(pending, groups, confirmed, client)
+    update_db(pending, groups, confirmed, cands, client)
     report(pending, groups, confirmed, near_misses, client)
     return 0
 

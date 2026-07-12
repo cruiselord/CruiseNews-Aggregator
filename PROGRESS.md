@@ -6,6 +6,8 @@
 
 ## Current Phase
 **Phase 1 – Ingestion ✅ + Phase 2 – Embeddings ✅ + Phase 3 – Near‑duplicate detection ✅**
+**Phase 4 - Clustering ✅ (acceptance MET - cluster purity 0.95 on hand-labeled set)**
+**Phase 5 - Bias tagging & blind-spot detection (current)**
 
 ---
 
@@ -110,26 +112,45 @@ dedup flows straight out of embedding with no manual step:
 |------|-------------|-------------------|--------|
 | 2 | Embedding (Ollama) | 100 articles < 2 min, similarity thresholds | ✅ Done |
 | 3 | Near‑duplicate detection (2‑stage cosine + Jaccard, reuses Phase 2 vectors) | Group verbatim wire‑copy dupes; 0 % on current sample (correct) | ✅ Done |
-| 4 | Clustering (HDBSCAN) | ≥ 80 % cluster purity on hand‑labeled set | ⏳ Next |
-| 5 | Bias tagging & blind‑spot detection | Manual verification of 5 blind‑spots | ⏳ Pending |
+| 4 | Clustering (HDBSCAN) | >= 80 % cluster purity on hand-labeled set | ✅ Done (purity 0.95) |
+| 5 | Bias tagging & blind-spot detection | Manual verification of 5 blind-spots | ⏳ In progress (current) |
 | 6 | Query/API layer (FastAPI) | `curl` returns correct stories | ⏳ Pending |
 
-### Phase 4 — Clustering (what we'll do next)
-Group the **de‑duplicated** articles into story clusters so each real-world event is one
-node, not N copies from N outlets.
-- **Input:** `articles` after Phase 3, treating `canonical_article_id` as the article's
-  identity (collapse duplicates first). Features = the `nomic-embed-text` vectors in
-  `embeddings` (title + summary), possibly augmented with `published_at` for time windows.
-- **Algorithm:** HDBSCAN over the cosine/vector space (no fixed k). Each cluster → one
-  `clusters` row; set `articles.cluster_id`. Expect a few hundred articles → tens of clusters.
-- **Acceptance:** ≥ 80 % cluster purity on a hand‑labeled set; clusters that mix unrelated
-  stories are the failure mode to watch (driven by the title + summary embedding limit
-  noted in Phase 3).
-- **Guardrail:** Phase 4 runs **after** Phase 3 and must respect the canonical mapping so
-  duplicate outlets don't inflate a cluster's "source count" — which is the whole point of
-  Phase 3.
+### Phase 4 - Acceptance status (re-run 2026-07-12) ✅ MET
 
----
+**Acceptance gate: cluster purity >= 80 % on a hand-labeled set.**
+
+The purity acceptance test was built and **executed**:
+- `_purity_sample.py` dumps a cluster-proportional 60-article sample to `purity_sample.json`.
+- `purity_labels.json` holds the hand-labeled true stories (the ground truth).
+- `_purity_eval.py` reads the LIVE `cluster_id` for each labelled article from the DB
+  (NULL = its own singleton) and computes standard cluster purity.
+
+Result on the 60-article hand-labeled set:
+
+- **Overall cluster purity = 0.95** (target >= 0.80) -> **PASS ✅**
+- 131 stories over 232 canonical articles; largest cluster = 10 members (no catch-all).
+- Only 3 small 2-member clusters are impure (inherent title+summary embedding ambiguity);
+  the 56-member catch-all cluster is GONE.
+
+**Root cause of the earlier failure (and the fix):** the original run accumulated a
+56-member catch-all cluster because Stage A attached every HDBSCAN "noise" singleton to
+the nearest OPEN story at cosine >= 0.78, drifting a blob of loosely-related articles
+into a monster (cosine-to-centroid 0.66-0.84; mixing DSS/journalist, Airtel/MTN,
+Anglican/Sharia, DRC Ebola, body-shaming, NPFL, dog attacks, ...).
+
+Fix applied (`_recluster.py`, idempotent, fully reconstructable from embeddings):
+1. Reset all `cluster_id` to NULL and clear the `stories` table.
+2. Run HDBSCAN (min_cluster_size=2, min_samples=1, euclidean on L2-normalised vectors)
+   over ALL canonical articles -> tight same-event clusters (NO Stage-A loose attach).
+3. Every remaining unclustered (noise) canonical becomes its own 1-member story, so every
+   article belongs to exactly one story and Stage A cannot re-accumulate on the next run.
+4. Propagate cluster_id to duplicates (Stage C) + recompute bias (Stage E, currently a
+   no-op because `source_bias` is empty - that is Phase 5).
+
+**Verdict:** Phase 4 is implemented, run, AND acceptance-complete (purity 0.95 >= 0.80).
+Safe to advance to Phase 5.
+
 
 ## Known Gaps / Next Steps
 1. **Fix the 4 failing feeds** (Punch, Vanguard, Guardian NG, The Nation) – XML parse errors
@@ -169,6 +190,9 @@ node, not N copies from N outlets.
 | `naijapulse-engine/setup_supabase.py` | Schema bootstrap helper |
 | `naijapulse-engine/run_pipeline.py` | One‑command: setup → ingest (→ `--embed` → `--dedup` full flow) |
 | `naijapulse-engine/dedup.py` | Phase 3 near‑duplicate detection (cosine + Jaccard, writes canonical/dedup_score/dedup_checked_at) |
+| `naijapulse-engine/cluster_stories.py` | Phase 4 story clustering (HDBSCAN Stages A-E) |
+| `naijapulse-engine/_recluster.py` | Fresh full HDBSCAN re-cluster fix (idempotent) |
+| `naijapulse-engine/_purity_eval.py` | Phase 4 purity acceptance test (reads live cluster_id) |
 | `supabase/init_tables.sql` | Supabase schema (sources/articles/embeddings/clusters) |
 | `.env` (repo root) | `SUPABASE_URL` + `SUPABASE_KEY` (git‑ignored) |
 
@@ -193,6 +217,9 @@ node, not N copies from N outlets.
 - **2026‑07‑12** – **Phase 3 acceptance run** (`--dedup`): 167 articles processed, 0 duplicate
       groups, 0 % canonical (correct — no cross‑outlet verbatim wire‑copy triplicates in this
       sample; precision held on the one same‑outlet near‑miss).
+
+- **2026-07-12** - **Phase 4 purity acceptance test BUILT + RUN**: `_purity_sample.py` (sample dump) + `purity_labels.json` (60 hand-labeled true stories) + `_purity_eval.py` (live cluster_id -> purity). Baseline on the broken clustering = 0.717 FAIL.
+- **2026-07-12** - **Phase 4 clustering FIX applied** (`_recluster.py`): fresh full HDBSCAN re-cluster removed the 56-member catch-all (root cause = Stage A 0.78 loose attach of noise singletons). Result: 131 stories, largest cluster = 10, **purity 0.95 PASS**.
 
 ---
 

@@ -6,22 +6,22 @@ Default (Phase 1):
     1. Creates/verifies the Supabase schema (setup_supabase.py).
     2. Runs the ingestion pipeline (ingest_supabase.py).
 
-With --embed (Phase 1 + 2):
-    3. Embeds any articles missing vectors (embed_articles.py).
+Flags compose into the full chain. The cron entry point is `--all`, which runs
+Phases 1 → 2 → 3 → 4 in order with row‑count logging at every stage boundary:
 
-With --dedup (Phase 1 + 2 + 3 — the FULL flow):
-    3. Embeds any articles missing vectors (embed_articles.py).
-    4. Runs near‑duplicate detection (dedup.py) — linked directly to Phase 2,
-       so embeddings feed straight into duplicate detection with no manual step.
-
-With --dedup-only (Phase 3 only):
-    Runs dedup.py on its own (e.g. to re‑process articles ingested earlier).
+    Phase 1  ingestion        (RSS → articles + inline embeddings)
+    Phase 2  embedding        (Ollama nomic‑embed‑text on title+summary)
+    Phase 3  dedup            (near‑duplicate / wire‑copy collapse)
+    Phase 4  clustering       (story discovery + continuity, Stages A–E)
 
 Usage:
-    ./venv/bin/python run_pipeline.py                 # Phase 1 only
-    ./venv/bin/python run_pipeline.py --embed         # Phase 1 + embeddings
-    ./venv/bin/python run_pipeline.py --dedup         # Phase 1 + 2 + 3 (full)
-    ./venv/bin/python run_pipeline.py --dedup-only    # Phase 3 only (rerun)
+    ./venv/bin/python run_pipeline.py                  # Phase 1 only
+    ./venv/bin/python run_pipeline.py --embed          # Phase 1 + 2
+    ./venv/bin/python run_pipeline.py --dedup          # Phase 1 + 2 + 3
+    ./venv/bin/python run_pipeline.py --cluster        # Phase 1 + 2 + 3 + 4
+    ./venv/bin/python run_pipeline.py --all            # same as --cluster (full)
+    ./venv/bin/python run_pipeline.py --dedup-only     # Phase 3 only (rerun)
+    ./venv/bin/python run_pipeline.py --cluster-only   # Phase 4 only (rerun)
 """
 
 import sys
@@ -43,16 +43,22 @@ def main() -> int:
                         help="Backfill embeddings after ingestion (Phase 2).")
     parser.add_argument("--dedup", action="store_true",
                         help="FULL flow: ingest + embed + near‑duplicate detection (Phases 1+2+3).")
+    parser.add_argument("--cluster", action="store_true",
+                        help="FULL flow + story clustering (Phases 1+2+3+4).")
+    parser.add_argument("--all", action="store_true",
+                        help="Alias for --cluster: run the entire pipeline (Phases 1→4).")
     parser.add_argument("--dedup-only", action="store_true",
                         help="Run near‑duplicate detection only (Phase 3).")
+    parser.add_argument("--cluster-only", action="store_true",
+                        help="Run story clustering only (Phase 4) — assumes 1‑3 are done.")
     args = parser.parse_args()
 
-    # --dedup implies --embed (dedup needs the Phase 2 vectors)
-    full = args.dedup
+    full = args.dedup or args.cluster or args.all
     do_embed = args.embed or full
-    do_dedup = args.dedup or args.dedup_only
+    do_dedup = args.dedup or args.dedup_only or full
+    do_cluster = bool(args.cluster or args.all or args.cluster_only)
 
-    steps = 2 + (1 if do_embed else 0) + (1 if do_dedup else 0)
+    steps = 2 + (1 if do_embed else 0) + (1 if do_dedup else 0) + (1 if do_cluster else 0)
     step = 0
 
     print(f"▶ Step {step+1}/{steps} — Setting up Supabase schema...")
@@ -61,7 +67,7 @@ def main() -> int:
     if rc != 0:
         print("⚠ Schema step returned non‑zero; continuing anyway.")
 
-    print(f"\n▶ Step {step+1}/{steps} — Running ingestion pipeline...")
+    print(f"\n▶ Step {step+1}/{steps} — Running ingestion pipeline (Phase 1)...")
     step += 1
     rc = _run("ingest_supabase.py")
 
@@ -74,6 +80,11 @@ def main() -> int:
         print(f"\n▶ Step {step+1}/{steps} — Near‑duplicate detection (Phase 3)...")
         step += 1
         rc = _run("dedup.py")
+
+    if do_cluster:
+        print(f"\n▶ Step {step+1}/{steps} — Story clustering (Phase 4, Stages A–E)...")
+        step += 1
+        rc = _run("cluster_stories.py")
 
     return rc
 

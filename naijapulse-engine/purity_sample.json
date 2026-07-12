@@ -1,0 +1,422 @@
+[
+  {
+    "article_id": "209b95be-3e35-418f-91f6-38cbb1648a4b",
+    "cluster_id": "c6c45f9f-2fcc-4b8b-9c7d-a14f79ca55d7",
+    "title": "NAN: FG commissions new rice mill in Kano",
+    "source_id": "8d13a4ab-304b-4c22-94b4-aad23cdbbf5f",
+    "published_at": "2026-07-12T08:00:00+00:00"
+  },
+  {
+    "article_id": "c967e665-0b81-400b-ab6a-d91c5b4722d8",
+    "cluster_id": "91b4a9d2-4fb9-4551-9afc-9b26a8149a9d",
+    "title": "Fuel price rises again as marketers adjust pump rates",
+    "source_id": "32b1013d-d27d-4cf3-8f15-9592192fa844",
+    "published_at": "2026-07-12T08:30:00+00:00"
+  },
+  {
+    "article_id": "d542c72c-954e-4bad-a1ef-c97d33138356",
+    "cluster_id": "f7d66c5f-f907-42c8-9601-0f52853c58c4",
+    "title": "US strikes Iran again, Iran attacks Bahrain, Qatar, Jordan, Kuwait",
+    "source_id": "8d13a4ab-304b-4c22-94b4-aad23cdbbf5f",
+    "published_at": "2026-07-12T06:58:47+00:00"
+  },
+  {
+    "article_id": "2df30afb-00e5-4c6f-901b-967f319462a7",
+    "cluster_id": "9f8aa814-b1b8-49cc-b0ad-8a128298266a",
+    "title": "A return to my alma mater…",
+    "source_id": "fb8cab1a-271e-42cd-a9b8-d29e743d49b4",
+    "published_at": "2026-07-12T04:35:00+00:00"
+  },
+  {
+    "article_id": "66774523-77a8-4004-94f4-960004507736",
+    "cluster_id": "24f63464-e000-4f21-903b-d874f4df8f00",
+    "title": "Eno, PDP spokesperson, others celebrate ex-Gov Emmanuel at 60",
+    "source_id": "8d13a4ab-304b-4c22-94b4-aad23cdbbf5f",
+    "published_at": "2026-07-11T20:01:12+00:00"
+  },
+  {
+    "article_id": "f5067443-0503-4393-8c20-0c15c98dabf1",
+    "cluster_id": "24f63464-e000-4f21-903b-d874f4df8f00",
+    "title": "The Mob in Kaduna",
+    "source_id": "1f5947ec-70ab-43fa-a65d-cc86420effb4",
+    "published_at": "2026-07-12T00:28:00+00:00"
+  },
+  {
+    "article_id": "fe4a7a26-ade4-4b0a-b10a-0118d1e09762",
+    "cluster_id": "24f63464-e000-4f21-903b-d874f4df8f00",
+    "title": "Divine verdict and bó ba o pá Osun politics",
+    "source_id": "fb8cab1a-271e-42cd-a9b8-d29e743d49b4",
+    "published_at": "2026-07-12T03:20:00+00:00"
+  },
+  {
+    "article_id": "743c798a-20b2-4f7a-8650-412e19feffec",
+    "cluster_id": "24f63464-e000-4f21-903b-d874f4df8f00",
+    "title": "El-Rufai and the Line between Prosecution and Persecution",
+    "source_id": "32b1013d-d27d-4cf3-8f15-9592192fa844",
+    "published_at": "2026-07-12T03:45:26+00:00"
+  },
+  {
+    "article_id": "e00864ed-227b-4136-89eb-5235d51b1b35",
+    "cluster_id": "24f63464-e000-4f21-903b-d874f4df8f00",
+    "title": "Unilorin Medical Mess as a Metaphor",
+    "source_id": "32b1013d-d27d-4cf3-8f15-9592192fa844",
+    "published_at": "2026-07-12T03:46:31+00:00"
+  },
+  {
+    "article_id": "3e83a4a0-885c-4f6a-a1d0-16a468b549b0",
+    "cluster_id": "24f63464-e000-4f21-903b-d874f4df8f00",
+    "title": "After IPI Nigeria’s Intervention, DSS Releases Journalist Arrested for Possession of Drone",
+    "source_id": "32b1013d-d27d-4cf3-8f15-9592192fa844",
+    "published_at": "2026-07-12T03:50:57+00:00"
+  },
+  {
+    "article_id": "adf87cf0-b6d0-4b3d-8fde-42b5a6d6ccd9",
+    "cluster_id": "24f63464-e000-4f21-903b-d874f4df8f00",
+    "title": "Akume: FG is Building Economy, Creating Opportunities, Restoring Confidence in Governance",
+    "source_id": "32b1013d-d27d-4cf3-8f15-9592192fa844",
+    "published_at": "2026-07-12T03:53:31+00:00"
+  },
+  {
+    "article_id": "d317a97f-4cc5-4d99-be24-caf19139713f",
+    "cluster_id": "24f63464-e000-4f21-903b-d874f4df8f00",
+    "title": "IG: State Police will Deepen Intelligence Gathering, Bring Security Closer to Nigerians",
+    "source_id": "32b1013d-d27d-4cf3-8f15-9592192fa844",
+    "published_at": "2026-07-12T03:55:17+00:00"
+  },
+  {
+    "article_id": "5aa7df6e-e0bf-41da-b41a-59901a43bcd5",
+    "cluster_id": "24f63464-e000-4f21-903b-d874f4df8f00",
+    "title": "Nigeria, Global Aircraft Manufacturers, Bombardier, Concludes Strategic Engagement",
+    "source_id": "32b1013d-d27d-4cf3-8f15-9592192fa844",
+    "published_at": "2026-07-12T04:01:14+00:00"
+  },
+  {
+    "article_id": "0299cd4a-1f7d-4f7f-863f-41c8d4fbe14d",
+    "cluster_id": "24f63464-e000-4f21-903b-d874f4df8f00",
+    "title": "UK Reaffirms Visa Requirement for Nigerians, over 100 Other Countries for Short Duration",
+    "source_id": "32b1013d-d27d-4cf3-8f15-9592192fa844",
+    "published_at": "2026-07-12T04:06:29+00:00"
+  },
+  {
+    "article_id": "dbad9dc9-c7f9-495d-a576-ad7c0903d448",
+    "cluster_id": "24f63464-e000-4f21-903b-d874f4df8f00",
+    "title": "Report: Boko Haram Uses AI to Make Bombs, Plot Operations",
+    "source_id": "32b1013d-d27d-4cf3-8f15-9592192fa844",
+    "published_at": "2026-07-12T04:07:10+00:00"
+  },
+  {
+    "article_id": "1aaf3ddc-46e7-4ee8-a29c-da5d43ffd2e4",
+    "cluster_id": "24f63464-e000-4f21-903b-d874f4df8f00",
+    "title": "Airtel Africa, Dangote Cement, MTN, Seven Others Account for 72.2% of NGX N156.44tn Market Capitalisation",
+    "source_id": "32b1013d-d27d-4cf3-8f15-9592192fa844",
+    "published_at": "2026-07-12T04:21:35+00:00"
+  },
+  {
+    "article_id": "10f814a5-aadb-4d5a-bc23-711cc0c95848",
+    "cluster_id": "24f63464-e000-4f21-903b-d874f4df8f00",
+    "title": "Gbaja gets a reprieve",
+    "source_id": "fb8cab1a-271e-42cd-a9b8-d29e743d49b4",
+    "published_at": "2026-07-12T05:08:00+00:00"
+  },
+  {
+    "article_id": "a4031819-c963-4ce2-ae2e-d0095e23edf9",
+    "cluster_id": "24f63464-e000-4f21-903b-d874f4df8f00",
+    "title": "Counting cost of South Africa’s xenophobia",
+    "source_id": "fb8cab1a-271e-42cd-a9b8-d29e743d49b4",
+    "published_at": "2026-07-12T05:35:00+00:00"
+  },
+  {
+    "article_id": "3d6321d5-1358-46aa-854e-6b191503691d",
+    "cluster_id": "24f63464-e000-4f21-903b-d874f4df8f00",
+    "title": "Man who lost parents to elephant attack 12 years ago loses daughter-in-law, grandson to same animal",
+    "source_id": "fb8cab1a-271e-42cd-a9b8-d29e743d49b4",
+    "published_at": "2026-07-12T06:05:00+00:00"
+  },
+  {
+    "article_id": "968c668d-ba98-421c-a530-cd56e641f820",
+    "cluster_id": "cb5ba297-208a-480c-abdf-b3bc7e9ab75b",
+    "title": "“I don’t want to talk to Adeboye; a pastor must rebuke a bad government” — Odumeje",
+    "source_id": "8d13a4ab-304b-4c22-94b4-aad23cdbbf5f",
+    "published_at": "2026-07-11T20:17:00+00:00"
+  },
+  {
+    "article_id": "4a937160-fe17-4897-854d-2768013da802",
+    "cluster_id": "f6a48a00-521f-4e93-9dfd-1714ed0a3fcc",
+    "title": "World Cup: Alvarez and Lautaro seal Argentina’s extra-time win over Switzerland",
+    "source_id": "8d13a4ab-304b-4c22-94b4-aad23cdbbf5f",
+    "published_at": "2026-07-12T05:37:58+00:00"
+  },
+  {
+    "article_id": "855c0651-adb1-44b8-9072-bdbbda1f6271",
+    "cluster_id": "f6a48a00-521f-4e93-9dfd-1714ed0a3fcc",
+    "title": "Argentina survive Swiss scare to reach World Cup last four",
+    "source_id": "1f5947ec-70ab-43fa-a65d-cc86420effb4",
+    "published_at": "2026-07-12T06:48:15+00:00"
+  },
+  {
+    "article_id": "89a7a810-5ffd-4a71-9777-c8cf31788593",
+    "cluster_id": "bd036f38-9221-4bff-a00e-84e94c0f8522",
+    "title": "Two killed, four injured in shooting at Toronto street festival",
+    "source_id": "8f961761-b812-4000-b030-f3bdd7d0a576",
+    "published_at": "2026-07-12T06:19:12+00:00"
+  },
+  {
+    "article_id": "5b20b4a1-0278-4aef-bb34-e93bf26de588",
+    "cluster_id": "ded5187c-547a-4f33-8b00-b859307e8b95",
+    "title": "World Cup: Bellingham’s brace fires England into semi-finals as Haaland crashes out with Norway",
+    "source_id": "8d13a4ab-304b-4c22-94b4-aad23cdbbf5f",
+    "published_at": "2026-07-11T23:54:56+00:00"
+  },
+  {
+    "article_id": "0b6b3856-2a61-4694-9df1-0cf75704ad77",
+    "cluster_id": "ded5187c-547a-4f33-8b00-b859307e8b95",
+    "title": "World Cup: Bellingham brace sends England to semi-final",
+    "source_id": "1f5947ec-70ab-43fa-a65d-cc86420effb4",
+    "published_at": "2026-07-12T00:22:10+00:00"
+  },
+  {
+    "article_id": "eda598c3-9a64-4e91-b3a2-e84d598820d3",
+    "cluster_id": "ded5187c-547a-4f33-8b00-b859307e8b95",
+    "title": "Bellingham’s Brace Books England Semifinal Ticket as Three Lions Await Winner of Argentina vs Switzerland",
+    "source_id": "32b1013d-d27d-4cf3-8f15-9592192fa844",
+    "published_at": "2026-07-12T01:50:33+00:00"
+  },
+  {
+    "article_id": "6fb6400d-6605-48f6-978b-771ef10ecb9c",
+    "cluster_id": "275affbf-9cb7-4f94-8cbb-db741d94afcd",
+    "title": "2027: Debate, permutations as Tinubu retains Shettima",
+    "source_id": "8f961761-b812-4000-b030-f3bdd7d0a576",
+    "published_at": "2026-07-12T05:55:27+00:00"
+  },
+  {
+    "article_id": "30af7198-a6f2-4560-b2b9-3d93dc40703a",
+    "cluster_id": "275affbf-9cb7-4f94-8cbb-db741d94afcd",
+    "title": "2027: Zulum extols Tinubu for retaining Shettima as running mate",
+    "source_id": "fb8cab1a-271e-42cd-a9b8-d29e743d49b4",
+    "published_at": "2026-07-12T06:46:15+00:00"
+  },
+  {
+    "article_id": "45814111-113e-466f-892a-5fbcff4bd177",
+    "cluster_id": "178ef808-4a03-47ec-82db-511815f6cc06",
+    "title": "Good news from Oriire, and lessons from endless insecurity",
+    "source_id": "fb8cab1a-271e-42cd-a9b8-d29e743d49b4",
+    "published_at": "2026-07-12T03:50:00+00:00"
+  },
+  {
+    "article_id": "659d0708-2b7c-481e-ad43-46e90c977a46",
+    "cluster_id": "178ef808-4a03-47ec-82db-511815f6cc06",
+    "title": "After Oyo Schoolchildren, Teachers Regain Freedom, ADC Demands Rescue of Borno, Kwara Kidnap Victims",
+    "source_id": "32b1013d-d27d-4cf3-8f15-9592192fa844",
+    "published_at": "2026-07-12T04:17:03+00:00"
+  },
+  {
+    "article_id": "590eb331-7f22-4d1b-8ebd-df8d56512fed",
+    "cluster_id": "178ef808-4a03-47ec-82db-511815f6cc06",
+    "title": "Army: How We Rescued 44 Abducted Pupils, Teachers",
+    "source_id": "32b1013d-d27d-4cf3-8f15-9592192fa844",
+    "published_at": "2026-07-12T04:30:06+00:00"
+  },
+  {
+    "article_id": "3fc5427c-3f7b-4ab8-957b-f5aa0db83a17",
+    "cluster_id": "178ef808-4a03-47ec-82db-511815f6cc06",
+    "title": "Sanwo-Olu hails rescue of abducted Oyo schoolchildren, teachers",
+    "source_id": "8f961761-b812-4000-b030-f3bdd7d0a576",
+    "published_at": "2026-07-12T05:50:57+00:00"
+  },
+  {
+    "article_id": "7f4d4607-7981-4ddc-acaf-727a5f2ab4ef",
+    "cluster_id": "78d56098-efaf-4eee-b3b8-22f0f171186c",
+    "title": "BREAKING: Scores feared dead as suspected herdsmen launch fresh attacks in Benue",
+    "source_id": "8f961761-b812-4000-b030-f3bdd7d0a576",
+    "published_at": "2026-07-12T08:34:12+00:00"
+  },
+  {
+    "article_id": "9ed167fd-9831-4e91-b03d-27e92ff235fe",
+    "cluster_id": "78d56098-efaf-4eee-b3b8-22f0f171186c",
+    "title": "Nine Killed in Fresh Attacks on Niger Communities",
+    "source_id": "1f5947ec-70ab-43fa-a65d-cc86420effb4",
+    "published_at": "2026-07-12T12:16:35+00:00"
+  },
+  {
+    "article_id": "23fb3162-b459-4aa3-978e-b7ff80f9ba16",
+    "cluster_id": "8d517630-36fc-463f-a747-c40f016cb975",
+    "title": "St. Ives to bridge Nigeria’s healthcare delivery with urgent care clinics",
+    "source_id": "6b847de7-afac-4df7-bc78-30bdc4650158",
+    "published_at": "2026-07-12T07:16:42+00:00"
+  },
+  {
+    "article_id": "5890c14c-b6ae-4603-8257-3e4ec837e81c",
+    "cluster_id": "8d517630-36fc-463f-a747-c40f016cb975",
+    "title": "Bauchi gets commendation over commitment to population development activities",
+    "source_id": "fb8cab1a-271e-42cd-a9b8-d29e743d49b4",
+    "published_at": "2026-07-12T10:07:36+00:00"
+  },
+  {
+    "article_id": "ed2f9745-e564-406a-88fd-af046d03e9d0",
+    "cluster_id": "2ec3f090-1fbb-4c48-be29-ae2f9e15278e",
+    "title": "The PFIPC Scandal and the Urgent Reforms Required",
+    "source_id": "32b1013d-d27d-4cf3-8f15-9592192fa844",
+    "published_at": "2026-07-12T02:45:00+00:00"
+  },
+  {
+    "article_id": "4c924824-3af4-4efb-a8c9-5a648108d703",
+    "cluster_id": "2ec3f090-1fbb-4c48-be29-ae2f9e15278e",
+    "title": "PFIPC fallout: Police visited my home in Ogbomoso twice, seized my phones — Adeyemi’s father",
+    "source_id": "fb8cab1a-271e-42cd-a9b8-d29e743d49b4",
+    "published_at": "2026-07-12T07:49:19+00:00"
+  },
+  {
+    "article_id": "47e83006-1c04-41b3-8093-c6a90358bb8e",
+    "cluster_id": "5e22954c-af95-4a8f-bdf4-e8b17506b943",
+    "title": "Marwa Seeks Traditional Rulers’ Support to Tackle Drug Abuse, Protect Girl-child",
+    "source_id": "32b1013d-d27d-4cf3-8f15-9592192fa844",
+    "published_at": "2026-07-12T03:51:56+00:00"
+  },
+  {
+    "article_id": "f1c33142-d034-467d-8edd-cf80bfd8f748",
+    "cluster_id": "28df7d15-5eae-47b3-a935-feb103f8080b",
+    "title": "Lindsey Graham, war-mongering US senator, is dead",
+    "source_id": "8d13a4ab-304b-4c22-94b4-aad23cdbbf5f",
+    "published_at": "2026-07-12T06:44:54+00:00"
+  },
+  {
+    "article_id": "b18e5ba9-501f-4ab8-a106-8b324989d2d0",
+    "cluster_id": "28df7d15-5eae-47b3-a935-feb103f8080b",
+    "title": "Prominent US Senator, Lindsey Graham is dead",
+    "source_id": "8f961761-b812-4000-b030-f3bdd7d0a576",
+    "published_at": "2026-07-12T07:05:09+00:00"
+  },
+  {
+    "article_id": "c5a119c0-e9ae-4b42-9b63-530c7ced3918",
+    "cluster_id": "58b02d09-d2b7-4e90-9719-414cb1b0abb5",
+    "title": "INEC extends deadline for parties to submit candidates for 2027 polls",
+    "source_id": "1f5947ec-70ab-43fa-a65d-cc86420effb4",
+    "published_at": "2026-07-12T05:59:03+00:00"
+  },
+  {
+    "article_id": "06d61d35-6c3d-4739-9847-caddab9596af",
+    "cluster_id": "58b02d09-d2b7-4e90-9719-414cb1b0abb5",
+    "title": "INEC extends deadline for submission of 2027 presidential, NASS candidates",
+    "source_id": "8f961761-b812-4000-b030-f3bdd7d0a576",
+    "published_at": "2026-07-12T06:15:48+00:00"
+  },
+  {
+    "article_id": "129e32a4-6e02-48f8-b51c-7b0797e46d24",
+    "cluster_id": "d62c2e67-d6c2-4cf0-a28f-aad2b5147fe7",
+    "title": "Inter Milan move thrills Super Falcons star Toni Payne",
+    "source_id": "8d13a4ab-304b-4c22-94b4-aad23cdbbf5f",
+    "published_at": "2026-07-12T06:01:44+00:00"
+  },
+  {
+    "article_id": "b36f767d-3462-4e48-8dbf-caf036565618",
+    "cluster_id": "c1822333-d363-418a-8a73-608afcae5d69",
+    "title": "World Cup 2026: Why I replaced Declan Rice at halftime – England coach Tuchel",
+    "source_id": "8f961761-b812-4000-b030-f3bdd7d0a576",
+    "published_at": "2026-07-12T06:12:03+00:00"
+  },
+  {
+    "article_id": "cc58118b-c55e-4f64-94a3-5965de258ac9",
+    "cluster_id": "eee9143f-a9a6-4303-8a9e-0fa97ba57cf6",
+    "title": "34 days to guber poll: Simmering crisis burning APC from within remains, despite assurances…",
+    "source_id": "fb8cab1a-271e-42cd-a9b8-d29e743d49b4",
+    "published_at": "2026-07-12T06:35:00+00:00"
+  },
+  {
+    "article_id": "4d8b404f-5016-47ae-9160-99383b56b41d",
+    "cluster_id": "02e03e9b-d04c-4932-ab30-335ac0f00cc7",
+    "title": "Kano Pillars appoint Ogunmodede as Technical Adviser",
+    "source_id": "1f5947ec-70ab-43fa-a65d-cc86420effb4",
+    "published_at": "2026-07-11T17:10:35+00:00"
+  },
+  {
+    "article_id": "6214f3dc-cebb-4896-896c-aa2116aa667f",
+    "cluster_id": "285d61dd-4831-4b9c-8367-d3c27dbf39f1",
+    "title": "Umahi: Obi will be alive in 2027 but will lose to Tinubu",
+    "source_id": "1f5947ec-70ab-43fa-a65d-cc86420effb4",
+    "published_at": "2026-07-11T20:54:19+00:00"
+  },
+  {
+    "article_id": "d9551aee-6f63-4d76-b51b-bb8d46a579d2",
+    "cluster_id": "285d61dd-4831-4b9c-8367-d3c27dbf39f1",
+    "title": "2027: ‘Miracle centre presidential candidate’ – Presidency hits Peter Obi",
+    "source_id": "8f961761-b812-4000-b030-f3bdd7d0a576",
+    "published_at": "2026-07-12T06:24:34+00:00"
+  },
+  {
+    "article_id": "5efefbf0-b12e-4239-af77-de2a23499ea3",
+    "cluster_id": "d487d8f1-620b-4a1c-9ab3-ccaed82b1fd9",
+    "title": "Alavin retracts viral allegation against Wizkid associate Godson, urges public to disregard video",
+    "source_id": "8f961761-b812-4000-b030-f3bdd7d0a576",
+    "published_at": "2026-07-12T13:16:45+00:00"
+  },
+  {
+    "article_id": "bead3e5d-1582-4d87-bab8-e5c1afd5b641",
+    "cluster_id": "4408a6e2-fb0f-4d4d-bd9b-b20926535d48",
+    "title": "When Football’s Greatest Name Could No Longer Live on History Alone",
+    "source_id": "32b1013d-d27d-4cf3-8f15-9592192fa844",
+    "published_at": "2026-07-12T01:50:22+00:00"
+  },
+  {
+    "article_id": "f4d76e2c-ec8c-4e85-a91b-a0f808f34b6a",
+    "cluster_id": "4408a6e2-fb0f-4d4d-bd9b-b20926535d48",
+    "title": "How my song ‘Fall’ changed my life — Davido",
+    "source_id": "fb8cab1a-271e-42cd-a9b8-d29e743d49b4",
+    "published_at": "2026-07-12T07:35:00+00:00"
+  },
+  {
+    "article_id": "6a98cfcb-dabd-41b9-92ce-c2aef147d6f0",
+    "cluster_id": "c15c1e2f-46de-46f3-9044-49fe1759ac9d",
+    "title": "10 family members wiped out as bandits attack Plateau community",
+    "source_id": "8f961761-b812-4000-b030-f3bdd7d0a576",
+    "published_at": "2026-07-12T08:43:45+00:00"
+  },
+  {
+    "article_id": "9c1080c4-dd54-4d2e-a4a4-cae37b5fcc42",
+    "cluster_id": "8b44e8d5-b3d5-4c80-be80-775c0c0ca56f",
+    "title": "Africa richest continent, can feed entire world if governed by good leaders – Peter Obi",
+    "source_id": "8f961761-b812-4000-b030-f3bdd7d0a576",
+    "published_at": "2026-07-12T09:44:26+00:00"
+  },
+  {
+    "article_id": "92f63457-8274-416c-b24b-fa3fff6167a5",
+    "cluster_id": "d2811e87-750f-4a8e-8f0b-e5f3df3d147f",
+    "title": "Inside Nigeria’s expanding drug crisis despite NDLEA’s crackdown",
+    "source_id": "fb8cab1a-271e-42cd-a9b8-d29e743d49b4",
+    "published_at": "2026-07-12T05:05:00+00:00"
+  },
+  {
+    "article_id": "7431998c-16ab-40cf-97cc-06d9d12b0475",
+    "cluster_id": "d2811e87-750f-4a8e-8f0b-e5f3df3d147f",
+    "title": "Former Okada rider excretes 100 wraps of methamphetamine [Video]",
+    "source_id": "8f961761-b812-4000-b030-f3bdd7d0a576",
+    "published_at": "2026-07-12T09:53:12+00:00"
+  },
+  {
+    "article_id": "063a021a-0fba-49cf-9fa9-020ce5155ac3",
+    "cluster_id": "be997c30-374b-47cc-a1cc-07df18129012",
+    "title": "Sale of used breast implants online on the increase in Russia as women battle economic crisis",
+    "source_id": "fb8cab1a-271e-42cd-a9b8-d29e743d49b4",
+    "published_at": "2026-07-12T03:35:00+00:00"
+  },
+  {
+    "article_id": "215b9238-631d-40a3-bd2d-800a3829e114",
+    "cluster_id": "67dd0687-d9fe-4683-99e2-e673cbd13635",
+    "title": "Iran shuts Strait of Hormuz amid fresh hostilities with US",
+    "source_id": "1f5947ec-70ab-43fa-a65d-cc86420effb4",
+    "published_at": "2026-07-12T00:19:07+00:00"
+  },
+  {
+    "article_id": "f3c3548f-368a-4731-a0ed-2b3e0e2efb82",
+    "cluster_id": "9a0799df-fbce-44a7-bb50-b69191cd4acc",
+    "title": "Degrees are no longer enough as firms take future-ready skills to Nigerian campuses",
+    "source_id": "6b847de7-afac-4df7-bc78-30bdc4650158",
+    "published_at": "2026-07-12T07:15:35+00:00"
+  },
+  {
+    "article_id": "5d9f2419-5d2b-4ae8-8358-02fdc941baae",
+    "cluster_id": "a8374382-56c4-4a2e-a29c-b736fdd4afb8",
+    "title": "‘New Pour Summit’  to elevate Africa’s beverage sector with ‘Liquid Resilience’ agenda",
+    "source_id": "6b847de7-afac-4df7-bc78-30bdc4650158",
+    "published_at": "2026-07-12T07:10:36+00:00"
+  }
+]
