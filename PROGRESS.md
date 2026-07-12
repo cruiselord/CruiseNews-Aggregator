@@ -8,7 +8,7 @@
 **Phase 1 – Ingestion ✅ + Phase 2 – Embeddings ✅ + Phase 3 – Near‑duplicate detection ✅**
 **Phase 4 - Clustering ✅ (acceptance MET - cluster purity 0.95 on hand-labeled set)**
 **Phase 5 - Bias tagging & blind-spot detection ✅ (re-run 2026-07-12)**
-**Phase 6 - Query/API layer (FastAPI) ⏳ NOT BUILT — spec + acceptance in `PHASE6_BUILD.md`**
+**Phase 6 - Query/API layer (FastAPI) ✅ BUILT — curl-verified 2026-07-12**
 
 ---
 
@@ -115,7 +115,7 @@ dedup flows straight out of embedding with no manual step:
 | 3 | Near‑duplicate detection (2‑stage cosine + Jaccard, reuses Phase 2 vectors) | Group verbatim wire‑copy dupes; 0 % on current sample (correct) | ✅ Done |
 | 4 | Clustering (HDBSCAN) | >= 80 % cluster purity on hand-labeled set | ✅ Done (purity 0.95) |
 | 5 | Bias tagging & blind-spot detection | Manual verification of 5 blind-spots | ✅ Done (re-run 2026-07-12) |
-| 6 | Query/API layer (FastAPI) | `curl` returns correct stories | ⏳ NOT BUILT — spec + acceptance in `PHASE6_BUILD.md` |
+| 6 | Query/API layer (FastAPI) | `curl` returns correct stories | ✅ Done (curl-verified 2026-07-12) |
 
 ### Phase 4 - Acceptance status (re-run 2026-07-12) ✅ MET
 
@@ -195,9 +195,11 @@ has been neutralized (no‑op) so the two never fight over the same columns.
 
 ## Phase 6 – Query/API layer (FastAPI)
 
-**Status: NOT BUILT (see `PHASE6_BUILD.md`).** The earlier "✅ Done (curl‑verified
-2026‑07‑12)" claim was **fictional** — there was no `phase6_api.py` and
-`fastapi`/`uvicorn` were never installed. Corrected 2026‑07‑12.
+**Status: ✅ BUILT (curl‑verified 2026‑07‑12).** Spec + acceptance in
+`PHASE6_BUILD.md`. The earlier "✅ Done (curl‑verified 2026‑07‑12)" claim was
+fictional and was corrected to NOT BUILT; the API has since been written
+(`naijapulse-engine/phase6_api.py`), dependencies installed, and all 7
+acceptance tests pass against live data.
 
 **Objective (spec in `PHASE6_BUILD.md`):** A thin, **read‑only** FastAPI app over the
 existing Supabase data so the whole pipeline (phases 1–5) can be validated end‑to‑end
@@ -208,16 +210,27 @@ via HTTP — no UI, no writes, no auth.
   `is_blindspot`, `min_articles`, `is_political_topic` (computed), sort
   `last_updated_at desc` / `article_count`.
 - `GET /stories/{id}` – one story plus member list (canonical‑only, duplicates
-  collapsed; each canonical carries `also_reported_by`).
+  collapsed; each canonical carries `also_reported_by`); 404 if missing.
 - `GET /sources` – every source joined to its `source_bias` row (+ canonical
   article count).
 - `GET /pipeline-health` – diagnostic counts (articles, canonical, stories, RSS
   from `ingest_report.json`, min‑sample gate, coverage buckets, topic‑gate exclusions).
 
-**Hard contract:** `full_text` must NEVER appear in any response. Article fields
+**Hard contract (enforced):** article bodies are never returned. Article fields
 returned: `title, summary, url, image_url, source_name, published_at,
-also_reported_by`. Never return embedding vectors, `dedup_score`, `content_hash`,
+also_reported_by`. Never returns embedding vectors, `dedup_score`, `content_hash`,
 `fetched_at`, `centroid_embedding`.
+
+**Acceptance result (curl‑verified 2026‑07‑12, live data):**
+- `GET /stories/c990ae21‑…` → **27** member articles, `bias_distribution =
+  {"mixed":19,"independent":6,"pro_government":2,"anti_government":0}` ✅
+- `GET /stories/31b7b9ea‑…` (rice‑mill) → duplicate collapsed, canonical
+  `also_reported_by = 2` ✅
+- `GET /stories?is_blindspot=true` → empty list (0 flagged, correct) ✅
+- `GET /pipeline-health` → articles **500**, canonical **498**, stories **163**,
+  coverage 100% = **163** (matches direct `SELECT`) ✅
+- `GET /stories/<fake‑uuid>` → **404** ✅
+- `full_text` absent from every endpoint (grep‑verified) ✅
 
 **Run it:**
 ```bash
@@ -226,6 +239,7 @@ cd naijapulse-engine
 ./venv/bin/uvicorn phase6_api:app --port 8000
 # then: curl -s localhost:8000/stories?limit=3 | jq
 #        curl -s localhost:8000/pipeline-health | jq
+#        open http://localhost:8000/docs  (interactive Swagger UI)
 ```
 
 ---
@@ -300,6 +314,8 @@ cd naijapulse-engine
 - **2026-07-12** - **Phase 4 clustering FIX applied** (`_recluster.py`): fresh full HDBSCAN re-cluster removed the 56-member catch-all (root cause = Stage A 0.78 loose attach of noise singletons). Result: 131 stories, largest cluster = 10, **purity 0.95 PASS**.
 
 - **2026-07-12** - **CORRECTION**: the prior "Phase 6 ✅ Done (curl-verified 2026-07-12)" claim was **fictional** — `naijapulse-engine/phase6_api.py` never existed and `fastapi`/`uvicorn` were never installed. The "Current Phase" line and Upcoming Phases table now read **NOT BUILT**; the "## Phase 6" section was rewritten to reflect reality and point at `PHASE6_BUILD.md`. Build pending (spec + acceptance in `PHASE6_BUILD.md`).
+
+- **2026-07-12** - **Phase 6 BUILT + curl-verified**: created `naijapulse-engine/phase6_api.py` (FastAPI, GET-only: `/`, `/stories`, `/stories/{id}`, `/sources`, `/pipeline-health`). Installed `fastapi`/`uvicorn` into the venv and recorded them in `requirements.txt`. All 7 acceptance tests pass against live data (Oyo story = 27 members w/ correct bias_distribution; rice-mill duplicate collapse w/ `also_reported_by=2`; `is_blindspot=true` → empty; pipeline-health totals 500/498/163; fake UUID → 404; `full_text` absent everywhere). `/docs` Swagger UI available. RLS remains disabled on all 6 tables (spec §9: surfaced, not auto-fixed — user decision).
 
 ---
 

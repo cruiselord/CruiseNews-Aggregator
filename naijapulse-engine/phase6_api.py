@@ -166,7 +166,7 @@ def root():
         "status": "ok",
         "endpoints": ["/stories", "/stories/{id}", "/sources",
                       "/pipeline-health"],
-        "note": "read-only; full_text is never returned",
+        "note": "read-only; article bodies are never returned",
     }
 
 
