@@ -356,56 +356,20 @@ def stage_d(client, now: str) -> int:
 
 
 # --------------------------------------------------------------------------
-# Stage E - bias_distribution + is_blindspot
+# Stage E - bias_distribution + is_blindspot  (NEUTRALIZED)
 # --------------------------------------------------------------------------
+# Phase 5 (bias_blindspot.py) is now the SINGLE OWNER of all four bias columns
+# on `stories` (bias_distribution, is_blindspot, bias_coverage_pct,
+# blindspot_checked_at). Clustering must no longer write bias — doing so here
+# would let two different algorithms fight over the same columns. Stories are
+# created with bias fields NULL / False and filled by Phase 5.
+#
+# The function is kept (signature unchanged) so _recluster.py still imports
+# cleanly; it simply does nothing now.
 def stage_e(client, touched: Set[str]) -> None:
-    """For each story touched this run, join its CANONICAL member articles to
-    source_bias, count per ownership_lean, and flag blindspots."""
-    skipped_sources = 0
-    for sid in touched:
-        members = (client.table("articles")
-                   .select("id, source_id")
-                   .eq("cluster_id", sid)
-                   .is_("canonical_article_id", "null")
-                   .execute()
-                   .data) or []
-        src_ids = [m["source_id"] for m in members if m.get("source_id")]
-        if not src_ids:
-            bias = {}
-        else:
-            bias_rows = (client.table("source_bias")
-                         .select("source_id, ownership_lean")
-                         .in_("source_id", src_ids)
-                         .execute()
-                         .data) or []
-            lean_by_source = {b["source_id"]: b.get("ownership_lean") for b in bias_rows}
-            # count DISTINCT sources per lean (a source with N canonical articles
-            # about one story still contributes 1 to its lean - no double count)
-            lean_sources: Dict[str, Set[str]] = {}
-            for m in members:
-                s = m.get("source_id")
-                lean = lean_by_source.get(s)
-                if lean is None:
-                    skipped_sources += 1
-                    continue
-                lean_sources.setdefault(lean, set()).add(s)
-            bias = {lean: len(srcs) for lean, srcs in lean_sources.items()}
-
-        # blindspot starting rule: one lean has >=BLINDSPOT_MIN_ARTICLES while
-        # every other lean has zero representation (i.e. only one lean present)
-        distinct_leans = len(bias)
-        max_count = max(bias.values()) if bias else 0
-        is_blindspot = bool(distinct_leans == 1 and max_count >= BLINDSPOT_MIN_ARTICLES)
-
-        client.table("stories").update({
-            "bias_distribution": bias,
-            "is_blindspot": is_blindspot,
-        }).eq("id", sid).execute()
-        logger.info("Stage E: story %s bias=%s blindspot=%s", sid, bias, is_blindspot)
-
-    if skipped_sources:
-        logger.warning("Stage E: %d canonical member article(s) had NO source_bias "
-                       "row - skipped from bias_distribution (not fatal).", skipped_sources)
+    """No-op. Bias tagging + blindspot detection moved to Phase 5
+    (bias_blindspot.py). Kept so callers/imports don't break."""
+    logger.info("Stage E neutralized: bias now owned by Phase 5 (bias_blindspot.py).")
 
 
 # --------------------------------------------------------------------------
