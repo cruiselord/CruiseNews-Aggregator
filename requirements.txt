@@ -1,0 +1,5 @@
+# Project dependencies for NaijaPulse Engine
+supabase
+python-dotenv
+feedparser
+trafilatura

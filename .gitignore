@@ -1,0 +1,19 @@
+# Python artefacts
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+*.dist-info/
+*.wheel
+*.log
+
+# Virtual‑env
+venv/
+.env
+
+# Supabase bootstrap output (optional)
+ingest_report.json
+
+# Local tool files
+.claude/
