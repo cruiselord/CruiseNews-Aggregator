@@ -8,12 +8,21 @@ __pycache__/
 *.wheel
 *.log
 
-# Virtual‑env
+# Virtual environments
 venv/
-.env
+.venv/
 
-# Supabase bootstrap output (optional)
+# Local environment and secrets
+.env
+.env.*
+
+# Supabase bootstrap output
 ingest_report.json
 
-# Local tool files
+# Local databases and caches
+*.db
+*.sqlite3
+.DS_Store
+
+# Local Claude / editor state
 .claude/
