@@ -97,7 +97,11 @@ def main() -> None:
         res = c.table("stories").insert(row).execute()
         sid = res.data[0]["id"]
         aids = [m["id"] for m in members]
-        c.table("articles").update({"cluster_id": sid}).in_("id", aids).execute()
+        # Chunked: a single .in_() over all member ids can blow past PostgREST's
+        # query-size ceiling (same class of bug as Finding 7).
+        for i in range(0, len(aids), 100):
+            batch = aids[i:i + 100]
+            c.table("articles").update({"cluster_id": sid}).in_("id", batch).execute()
         created.append(sid)
         logger.info("created story %s with %d member(s)", sid, len(members))
 

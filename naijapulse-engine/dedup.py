@@ -136,14 +136,29 @@ def load_pending(client) -> List[Dict]:
     if not arts:
         return []
     ids = [a["id"] for a in arts]
-    embs = (
-        client.table("embeddings")
-        .select("article_id, vector")
-        .in_("article_id", ids)
-        .eq("model", EMBED_MODEL)
-        .execute()
-        .data
-    ) or []
+
+    # PostgREST / Postgres rejects a single `.in_()` filter once the serialized
+    # query (here, every article UUID) grows past its limits, returning HTTP 400
+    # ("JSON could not be generated"). Same class of bug as Finding 7 in
+    # ingest_supabase.py and the chunked lookup in embed_core.pending_article_ids.
+    # Keep each round trip small by batching the IDs.
+    chunk_size = 100
+    embs: List[Dict] = []
+    for i in range(0, len(ids), chunk_size):
+        batch = ids[i : i + chunk_size]
+        try:
+            batch_embs = (
+                client.table("embeddings")
+                .select("article_id, vector")
+                .in_("article_id", batch)
+                .eq("model", EMBED_MODEL)
+                .execute()
+                .data
+            ) or []
+            embs.extend(batch_embs)
+        except Exception as e:
+            logger.warning("Embedding lookup chunk %d failed: %s", i // chunk_size, e)
+
     emap = {e["article_id"]: to_vec(e["vector"]) for e in embs}
     pending = []
     for a in arts:
@@ -240,13 +255,19 @@ def build_groups(confirmed: List[Tuple[str, str, float, str]]) -> List[Set[str]]
 
 
 def pick_canonical(group: Set[str], client) -> str:
-    rows = (
-        client.table("articles")
-        .select("id, published_at, fetched_at")
-        .in_("id", list(group))
-        .execute()
-        .data
-    ) or []
+    # Chunked: a dedup group can be large; keep each .in_() under PostgREST's
+    # query-size ceiling (same class of bug as Finding 7).
+    rows = []
+    grp = list(group)
+    for i in range(0, len(grp), 100):
+        batch = grp[i:i + 100]
+        rows.extend(
+            (client.table("articles")
+             .select("id, published_at, fetched_at")
+             .in_("id", batch)
+             .execute()
+             .data) or []
+        )
     return min(rows, key=lambda r: _parse_ts(r.get("published_at") or r.get("fetched_at")))["id"]
 
 
@@ -278,7 +299,12 @@ def update_db(pending: List[Dict], groups: List[Set[str]],
     # stamp dedup_checked_at on EVERY processed article (one targeted update,
     # never rewrites the whole row so NOT NULL columns like `url` are untouched)
     all_ids = [a["id"] for a in pending]
-    client.table("articles").update({"dedup_checked_at": now}).in_("id", all_ids).execute()
+    # Chunk the bulk update: a single .in_() over every pending id can blow
+    # past PostgREST's query-size ceiling (same class of bug as Finding 7).
+    chunk_size = 100
+    for i in range(0, len(all_ids), chunk_size):
+        batch = all_ids[i:i + chunk_size]
+        client.table("articles").update({"dedup_checked_at": now}).in_("id", batch).execute()
     # set canonical_article_id + dedup_score on confirmed duplicate members;
     # dedup_score is also written for every other processed article (best neighbour).
     for aid in all_ids:

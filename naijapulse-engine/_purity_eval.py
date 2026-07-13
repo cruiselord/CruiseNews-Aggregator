@@ -42,9 +42,16 @@ def main() -> int:
 
     c = create_client(os.getenv("SUPABASE_URL"), os.getenv("SUPABASE_KEY"))
 
-    # fetch CURRENT cluster_id for every labelled article
+    # fetch CURRENT cluster_id for every labelled article.
+    # Chunked: a single .in_() over all label ids can blow past PostgREST's
+    # query-size ceiling (same class of bug as Finding 7 in ingest_supabase).
     ids = list(labels.keys())
-    rows = (c.table("articles").select("id, cluster_id").in_("id", ids).execute().data) or []
+    rows = []
+    for i in range(0, len(ids), 100):
+        batch = ids[i:i + 100]
+        rows.extend(
+            (c.table("articles").select("id, cluster_id").in_("id", batch).execute().data) or []
+        )
     cid_by_aid = {}
     for r in rows:
         cid = r.get("cluster_id")

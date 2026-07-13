@@ -35,6 +35,7 @@ from typing import Dict, List, Optional
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import JSONResponse
+from starlette.responses import Response
 from supabase import create_client
 
 # Load the engine-local .env (SUPABASE_URL / SUPABASE_KEY) regardless of the
@@ -121,11 +122,41 @@ def _fetch_sources_map(client) -> Dict[str, str]:
     return {r["id"]: r.get("name") for r in rows}
 
 
+def _fetch_canonical_counts_by_source(client) -> Dict[str, int]:
+    """source_id -> canonical article count, computed in SQL (Finding 9).
+
+    Pushes the per-source count aggregation into Postgres via the
+    canonical_counts_by_source() RPC so the API never pulls the entire
+    articles table across the network. Returns one row per source instead of
+    one row per article.
+    """
+    rows = client.rpc("canonical_counts_by_source").execute().data or []
+    return {r["source_id"]: int(r["canonical_count"]) for r in rows}
+
+
+def _fetch_article_counts_by_source(client) -> Dict[str, Dict[str, int]]:
+    """source_id -> {total_count, canonical_count}, computed in SQL (Finding 9).
+
+    /pipeline-health needs BOTH the total and the canonical count per source,
+    so it uses article_counts_by_source(), which returns both in one row per
+    source, instead of scanning the full articles table.
+    """
+    rows = client.rpc("article_counts_by_source").execute().data or []
+    return {r["source_id"]: {"total": int(r["total_count"]),
+                             "canonical": int(r["canonical_count"])}
+            for r in rows}
+
+
 def _fetch_canonical_titles_by_story(client) -> Dict[str, List[str]]:
     """cluster_id -> list of canonical member headlines.
 
     Used to compute is_political_topic per story (representative_title +
     member headlines) without N round-trips.
+
+    NOTE: this one is intentionally NOT pushed to SQL (Finding 9). It needs the
+    actual title *text* back (not just counts), so a full transfer of the
+    cluster_id/title columns is unavoidable here — the SQL-side alternative only
+    helps when you want aggregates, not row data. Kept as a deliberate exception.
     """
     rows = (client.table("articles")
             .select("cluster_id, title")
@@ -253,13 +284,20 @@ def get_story(story_id: str):
 
     # also_reported_by = count of duplicates whose canonical_article_id points
     # at each canonical article (Ground News "N outlets" pattern).
+    # Chunked: a single .in_() over all canonical ids can blow past PostgREST's
+    # query-size ceiling (same class of bug as Finding 7 in ingest_supabase).
     also_counts: Dict[str, int] = {}
     if canonical_ids:
-        dup_rows = (client.table("articles")
-                    .select("canonical_article_id")
-                    .in_("canonical_article_id", canonical_ids)
-                    .execute()
-                    .data) or []
+        dup_rows = []
+        for i in range(0, len(canonical_ids), 100):
+            batch = canonical_ids[i:i + 100]
+            dup_rows.extend(
+                (client.table("articles")
+                 .select("canonical_article_id")
+                 .in_("canonical_article_id", batch)
+                 .execute()
+                 .data) or []
+            )
         also_counts = dict(Counter(r["canonical_article_id"] for r in dup_rows))
 
     sources_map = _fetch_sources_map(client)
@@ -312,14 +350,9 @@ def list_sources():
     bias_by_source = {r["source_id"]: r for r in bias_rows}
 
     # Live count of canonical articles contributed per source.
-    articles = (client.table("articles")
-                .select("source_id, canonical_article_id")
-                .execute()
-                .data) or []
-    canonical_per_source: Dict[str, int] = Counter()
-    for a in articles:
-        if a.get("canonical_article_id") is None:
-            canonical_per_source[a.get("source_id")] += 1
+    # Finding 9: computed in SQL via RPC, not by scanning the whole articles
+    # table in Python on every request.
+    canonical_per_source = _fetch_canonical_counts_by_source(client)
 
     out = []
     for s in sources:
@@ -359,26 +392,18 @@ def pipeline_health():
                      .execute()).count or 0
 
     # Per-source article counts.
-    articles = (client.table("articles")
-                .select("source_id, canonical_article_id")
-                .execute()
-                .data) or []
+    # Finding 9: computed in SQL via RPC (one row per source) instead of
+    # scanning the whole articles table in Python on every request.
+    counts_by_source = _fetch_article_counts_by_source(client)
     sources_map = _fetch_sources_map(client)
-    per_source_total: Dict[str, int] = Counter()
-    per_source_canonical: Dict[str, int] = Counter()
-    for a in articles:
-        sid = a.get("source_id")
-        per_source_total[sid] += 1
-        if a.get("canonical_article_id") is None:
-            per_source_canonical[sid] += 1
     per_source = [
         {
             "source_id": sid,
             "source_name": sources_map.get(sid),
-            "total_articles": per_source_total[sid],
-            "canonical_articles": per_source_canonical[sid],
+            "total_articles": c["total"],
+            "canonical_articles": c["canonical"],
         }
-        for sid in per_source_total
+        for sid, c in counts_by_source.items()
     ]
 
     # Stories: distribution buckets + gates.
@@ -457,19 +482,53 @@ def pipeline_health():
 # --------------------------------------------------------------------------
 # safety: guarantee full_text can never leak, even via an unexpected field
 # --------------------------------------------------------------------------
+async def _read_response_body(response) -> bytes:
+    """Materialize a response body regardless of response class.
+
+    FastAPI/Starlette may return a JSONResponse (which exposes a ready ``body``
+    bytes attribute) or — in newer versions, e.g. 0.139 / Starlette 1.3.1 — a
+    StreamingResponse whose body is an unconsumed async iterator. Handle both.
+    """
+    body = getattr(response, "body", None)
+    if isinstance(body, (bytes, bytearray)):
+        return bytes(body)
+    if isinstance(body, str):
+        return body.encode("utf-8")
+    # StreamingResponse path: consume the iterator.
+    chunks = []
+    async for chunk in response.body_iterator:
+        if isinstance(chunk, str):
+            chunk = chunk.encode("utf-8")
+        chunks.append(chunk)
+    return b"".join(chunks)
+
+
 @app.middleware("http")
 async def strip_full_text(request, call_next):
     response = await call_next(request)
-    if isinstance(response, JSONResponse):
-        # Defensive: if anything ever serializes full_text, drop it. The code
-        # above never selects it, so this is a belt-and-braces guard only.
-        body = response.body
-        try:
-            payload = json.loads(body)
-            _scrub(payload)
-            response.body = json.dumps(payload).encode("utf-8")
-        except Exception:
-            pass
+    # Robustly detect a JSON body regardless of response class. Check the
+    # content-type rather than isinstance(JSONResponse), because newer
+    # FastAPI/Starlette wrap dict returns as a StreamingResponse.
+    ctype = response.headers.get("content-type", "") or ""
+    if "application/json" not in ctype:
+        return response
+    try:
+        raw = await _read_response_body(response)
+        payload = json.loads(raw)
+        _scrub(payload)
+        new_body = json.dumps(payload).encode("utf-8")
+        # Build a fresh Response so headers (Content-Length included) are
+        # recomputed from the new body, instead of mutating body in place
+        # on an already-constructed Response.
+        return Response(
+            content=new_body,
+            status_code=response.status_code,
+            headers={k: v for k, v in response.headers.items()
+                     if k.lower() != "content-length"},
+            media_type=response.media_type,
+        )
+    except Exception:
+        pass
     return response
 
 

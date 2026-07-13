@@ -105,20 +105,71 @@ def _parse_ts(s: Optional[str]) -> datetime.datetime:
     return datetime.datetime.fromisoformat(s.replace("Z", "+00:00"))
 
 
+# PostgREST / Postgres rejects a single .in_() filter once the serialized query
+# (here, every article UUID) grows past its limits, returning HTTP 400
+# ("JSON could not be generated"). Same class of bug as Finding 7 in
+# ingest_supabase.py. Keep each round trip small by batching the IDs.
+IN_CHUNK_SIZE = 100
+
+
+def _in_chunks(ids: List[str]):
+    """Yield successive IN_CHUNK_SIZE-sized slices of `ids`."""
+    for i in range(0, len(ids), IN_CHUNK_SIZE):
+        yield ids[i:i + IN_CHUNK_SIZE]
+
+
+def _chunked_in_select(client, table: str, column: str, ids: List[str],
+                       select: str = "*", extra=None) -> List[Dict]:
+    """SELECT rows where `column` IN `ids`, batched to stay under PostgREST's
+    query-size ceiling. Optional `extra(query)` lets callers add .eq(...) etc."""
+    out: List[Dict] = []
+    if not ids:
+        return out
+    for batch in _in_chunks(ids):
+        q = client.table(table).select(select).in_(column, batch)
+        if extra is not None:
+            q = extra(q)
+        try:
+            out.extend((q.execute().data) or [])
+        except Exception as e:
+            logger.warning("chunked select on %s.%s failed: %s", table, column, e)
+    return out
+
+
+def _chunked_in_update(client, table: str, column: str, ids: List[str],
+                       values: Dict) -> None:
+    """UPDATE rows where `column` IN `ids` to `values`, batched."""
+    if not ids:
+        return
+    for batch in _in_chunks(ids):
+        try:
+            client.table(table).update(values).in_(column, batch).execute()
+        except Exception as e:
+            logger.warning("chunked update on %s.%s failed: %s", table, column, e)
+
+
 # --------------------------------------------------------------------------
 # data loading
 # --------------------------------------------------------------------------
 def fetch_embeddings(client, ids: List[str]) -> Dict[str, np.ndarray]:
-    """Return {article_id: vector} for the given ids at the current model."""
+    """Return {article_id: vector} for the given ids at the current model.
+
+    Chunked: a single .in_() over all member / unassigned ids can exceed
+    PostgREST's query-size ceiling (same class of bug as Finding 7).
+    """
+    out: Dict[str, np.ndarray] = {}
     if not ids:
-        return {}
-    rows = (client.table("embeddings")
-            .select("article_id, vector")
-            .in_("article_id", ids)
-            .eq("model", EMBED_MODEL)
-            .execute()
-            .data) or []
-    return {r["article_id"]: to_vec(r["vector"]) for r in rows}
+        return out
+    for batch in _in_chunks(ids):
+        rows = (client.table("embeddings")
+                .select("article_id, vector")
+                .in_("article_id", batch)
+                .eq("model", EMBED_MODEL)
+                .execute()
+                .data) or []
+        for r in rows:
+            out[r["article_id"]] = to_vec(r["vector"])
+    return out
 
 
 def load_unassigned_canonical(client) -> List[Dict]:
@@ -211,7 +262,7 @@ def stage_a(client, unassigned: List[Dict], active: List[Dict], now: str
         touched.add(sid)
 
     for sid, aids in by_story.items():
-        client.table("articles").update({"cluster_id": sid}).in_("id", aids).execute()
+        _chunked_in_update(client, "articles", "id", aids, {"cluster_id": sid})
         _recompute_story(client, sid, now, touched=False)
         logger.info("Stage A: attached %d article(s) to story %s", len(aids), sid)
 
@@ -301,7 +352,7 @@ def stage_b(client, leftovers: List[Dict], now: str) -> List[str]:
         res = client.table("stories").insert(row).execute()
         sid = res.data[0]["id"]
         aids = [m["id"] for m in members]
-        client.table("articles").update({"cluster_id": sid}).in_("id", aids).execute()
+        _chunked_in_update(client, "articles", "id", aids, {"cluster_id": sid})
         created.append(sid)
         logger.info("Stage B: created story %s with %d article(s)", sid, len(members))
 
@@ -322,11 +373,9 @@ def stage_c(client) -> int:
     if not dups:
         return 0
     canon_ids = list({d["canonical_article_id"] for d in dups})
-    canon_rows = (client.table("articles")
-                  .select("id, cluster_id")
-                  .in_("id", canon_ids)
-                  .execute()
-                  .data) or []
+    # Chunked: canon_ids can be every duplicate's canonical (many rows).
+    canon_rows = _chunked_in_select(
+        client, "articles", "id", canon_ids, select="id, cluster_id")
     canon_cluster = {r["id"]: r.get("cluster_id") for r in canon_rows}
 
     updated = 0

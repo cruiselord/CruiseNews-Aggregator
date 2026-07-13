@@ -100,15 +100,27 @@ def pending_article_ids(client, model: str = EMBED_MODEL,
     Fetches candidate article ids, then the already-embedded ids for this model,
     and diffs in Python. The dataset is small, so this is simpler and more
     reliable than a PostgREST NOT EXISTS join.
+
+    The embedded-id lookup is chunked: PostgREST rejects a single .in_() filter
+    once the serialized query (here, all article UUIDs) grows past its limits,
+    returning HTTP 400 ("JSON could not be generated"). Same class of bug as
+    Finding 7 in ingest_supabase.py — keep each round trip small.
     """
     arts = client.table("articles").select("id").limit(limit).execute().data or []
     if not arts:
         return []
     ids = [a["id"] for a in arts]
-    done = (client.table("embeddings")
-            .select("article_id").in_("article_id", ids).eq("model", model)
-            .execute().data or [])
-    done_set = {d["article_id"] for d in done}
+    done_set: set = set()
+    chunk_size = 100
+    for i in range(0, len(ids), chunk_size):
+        batch = ids[i:i + chunk_size]
+        try:
+            done = (client.table("embeddings")
+                    .select("article_id").in_("article_id", batch).eq("model", model)
+                    .execute().data or [])
+            done_set.update(d["article_id"] for d in done)
+        except Exception as e:
+            logger.warning(f"Pending-embeddings chunk {i // chunk_size} failed: {e}")
     return [i for i in ids if i not in done_set]
 
 

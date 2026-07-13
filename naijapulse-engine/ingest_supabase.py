@@ -98,47 +98,11 @@ def google_news_feed_url(domain: str) -> str:
 
 class SupabaseDB:
     def __init__(self, url: str, key: str):
-        # Try to create Supabase client; if it fails, we will fall back to SQLite.
-        try:
-            self.supabase: Client = create_client(url, key)
-            self._use_sqlite = False
-        except Exception as e:
-            logger.warning(f"Supabase client init failed ({e}), falling back to SQLite for demo.")
-            self.supabase = None
-            self._use_sqlite = True
-            self._init_sqlite()
-    def _init_sqlite(self):
-        import sqlite3
-        self.conn = sqlite3.connect('naijapulse_demo.db')
-        self.conn.row_factory = sqlite3.Row
-        self._create_sqlite_schema()
-    def _create_sqlite_schema(self):
-        cur = self.conn.cursor()
-        cur.executescript('''
-        CREATE TABLE IF NOT EXISTS sources (
-            id TEXT PRIMARY KEY,
-            name TEXT NOT NULL,
-            rss_url TEXT NOT NULL,
-            homepage_url TEXT,
-            country TEXT DEFAULT 'NG',
-            active INTEGER DEFAULT 1,
-            created_at TEXT DEFAULT (datetime('now'))
-        );
-        CREATE TABLE IF NOT EXISTS articles (
-            id TEXT PRIMARY KEY,
-            source_id TEXT,
-            url TEXT UNIQUE NOT NULL,
-            title TEXT NOT NULL,
-            summary TEXT,
-            full_text TEXT,
-            image_url TEXT,
-            published_at TEXT,
-            fetched_at TEXT DEFAULT (datetime('now')),
-            content_hash TEXT,
-            cluster_id TEXT
-        );
-        ''')
-        self.conn.commit()
+        self.supabase: Client = create_client(url, key)
+        # If this raises, let it raise — do not silently swap to a different
+        # storage backend with different guarantees. A pipeline run that thinks
+        # it's writing to Supabase but is actually writing to local SQLite is a
+        # silent data-loss bug, not a resilience feature.
 
     def seed_sources(self, sources: List[Dict]) -> int:
         """Seed the sources table with initial outlets (idempotent)."""
@@ -183,6 +147,27 @@ class SupabaseDB:
         except Exception as e:
             logger.error(f"Error checking article existence: {e}")
             return False
+
+    def get_existing_urls(self, urls: List[str]) -> Set[str]:
+        """Batch existence check.
+
+        PostgREST/Postgres rejects a single .in_() filter once the serialized
+        query (e.g. 100 long Google News URLs) grows past its limits, returning
+        HTTP 400 ("JSON could not be generated"). Chunk the URLs into small
+        batches so each round trip stays well under that ceiling.
+        """
+        if not urls:
+            return set()
+        seen: Set[str] = set()
+        chunk_size = 25
+        for i in range(0, len(urls), chunk_size):
+            batch = urls[i:i + chunk_size]
+            try:
+                result = self.supabase.table('articles').select('url').in_('url', batch).execute()
+                seen.update(row['url'] for row in (result.data or []))
+            except Exception as e:
+                logger.warning(f"Batch existence check failed for chunk {i // chunk_size}: {e}")
+        return seen
 
     def insert_article(self, article_data: Dict) -> Optional[str]:
         """Insert article; return the new row's id, or None on failure/duplicate."""
@@ -241,53 +226,54 @@ def parse_rss_feed(feed_url: str, timeout: int = 30) -> tuple:
         logger.error(f"Failed to parse feed {feed_url}: {e}")
         return None, str(e)
 
-def extract_full_text(url: str, timeout: int = 20) -> tuple:
-    """Extract full text using trafilatura. Returns (text, status).
+def fetch_page(url: str, timeout: int = 20) -> Optional[str]:
+    """Single download of the raw HTML, reused by both extraction steps.
 
-    NOTE: this trafilatura build's fetch_url() does NOT take a `timeout` kwarg
-    (signature: fetch_url(url, no_ssl, config, options)). Passing one raises
-    TypeError, so we call it without it and rely on trafilatura's own defaults.
+    Finding 8: every article used to be downloaded twice (once by
+    trafilatura.fetch_url in extract_full_text, once by requests.get in
+    extract_image_url). Now the page is fetched exactly once here and handed to
+    both extractors, halving scraping-related network time and load.
     """
     try:
-        downloaded = trafilatura.fetch_url(url)
-        if not downloaded:
-            return None, "download_failed"
-        extracted = trafilatura.extract(downloaded, include_comments=False, include_tables=False)
-        if not extracted:
-            return None, "extraction_failed"
-        return extracted, None
-    except Exception as e:
-        msg = str(e).lower()
-        if "timed out" in msg or "timeout" in msg:
-            return None, "timeout"
-        if "403" in msg or "forbidden" in msg:
-            return None, "blocked"
-        return None, "other"
+        resp = requests.get(url, headers=BROWSER_HDR, timeout=timeout)
+        if resp.status_code == 200:
+            return resp.text
+    except requests.exceptions.RequestException:
+        pass
+    return None
 
-def extract_image_url(url: str, timeout: int = 20) -> tuple:
+
+def extract_full_text_from_html(html: str) -> tuple:
+    """Extract full text from already-fetched HTML using trafilatura.
+
+    Returns (text, status). Preserves the status strings the ingestion stats
+    counters rely on (download_failed / extraction_failed).
     """
-    Extract a lead image URL for an article by scraping its page.
+    if not html:
+        return None, "download_failed"
+    extracted = trafilatura.extract(html, include_comments=False, include_tables=False)
+    if not extracted:
+        return None, "extraction_failed"
+    return extracted, None
+
+
+def extract_image_url_from_html(html: str, base_url: str) -> tuple:
+    """Extract a lead image URL from already-fetched HTML.
+
+    Returns (image_url, None) on success or (None, reason) on failure.
       1. Prefer the Open Graph ``og:image`` meta tag (most news sites expose it).
       2. Fallback to the first ``<img>`` element, with relative URLs resolved.
-    Returns (image_url, None) on success or (None, reason) on failure.
     """
-    if not url:
-        return None, "no_url"
-    try:
-        headers = {'User-Agent': 'Mozilla/5.0 (compatible; NaijaPulse/1.0)'}
-        resp = requests.get(url, timeout=timeout, headers=headers)
-        if resp.status_code != 200:
-            return None, f"status_{resp.status_code}"
-        soup = BeautifulSoup(resp.text, "html.parser")
-        og = soup.find("meta", property="og:image")
-        if og and og.get("content"):
-            return og["content"], None
-        img = soup.find("img")
-        if img and img.get("src"):
-            return requests.compat.urljoin(url, img["src"]), None
-        return None, "no_image"
-    except Exception as e:
-        return None, str(e)
+    if not html:
+        return None, "no_html"
+    soup = BeautifulSoup(html, "html.parser")
+    og = soup.find("meta", property="og:image")
+    if og and og.get("content"):
+        return og["content"], None
+    img = soup.find("img")
+    if img and img.get("src"):
+        return requests.compat.urljoin(base_url, img["src"]), None
+    return None, "no_image"
 
 def process_entry(entry, source_id: str, summary_only: bool = False) -> tuple:
     """Process a feed entry. Returns (article_data, extraction_status)."""
@@ -306,8 +292,9 @@ def process_entry(entry, source_id: str, summary_only: bool = False) -> tuple:
 
     full_text = None
     extraction_status = "skipped"
+    html = fetch_page(url) if (url and not summary_only) else None
     if url and not summary_only:
-        full_text, extraction_status = extract_full_text(url)
+        full_text, extraction_status = extract_full_text_from_html(html)
         if full_text:
             content_hash = compute_hash(f"{title}{summary}{full_text[:500]}")
 
@@ -319,7 +306,7 @@ def process_entry(entry, source_id: str, summary_only: bool = False) -> tuple:
 
     image_url = None
     if url and not summary_only:
-        image_url, _ = extract_image_url(url)
+        image_url, _ = extract_image_url_from_html(html, url)
 
     article_data = {
         'source_id': source_id,
@@ -351,6 +338,7 @@ class IngestionStats:
     extraction_blocked: int = 0
     extraction_timeout: int = 0
     extraction_other: int = 0
+    extraction_summary_only: int = 0  # fallback/GNews feeds: captured via RSS summary, no full-text attempt
     failures: List[Dict] = None
     embedded: int = 0
     embed_failed: int = 0
@@ -364,8 +352,23 @@ class IngestionStats:
         return (self.feeds_success / self.feeds_total * 100) if self.feeds_total else 0.0
 
     @property
+    def extraction_attempted(self) -> int:
+        """Articles we actually tried to extract full text from (excludes
+        duplicates and summary-only fallback captures)."""
+        return (self.extraction_success + self.extraction_failed
+                + self.extraction_blocked + self.extraction_timeout
+                + self.extraction_other)
+
+    @property
     def extraction_success_rate(self) -> float:
-        return (self.extraction_success / self.articles_total * 100) if self.articles_total else 0.0
+        # Measure quality over *attempted* extractions, not over every entry
+        # processed (which includes already-existing duplicates skipped before
+        # extraction). Otherwise re-runs on a populated DB collapse the rate and
+        # spuriously fail the acceptance gate, aborting the whole pipeline.
+        attempted = self.extraction_attempted
+        if not attempted:
+            return 100.0
+        return self.extraction_success / attempted * 100
 
     def to_dict(self) -> Dict:
         return {
@@ -381,6 +384,7 @@ class IngestionStats:
             'extraction_blocked': self.extraction_blocked,
             'extraction_timeout': self.extraction_timeout,
             'extraction_other': self.extraction_other,
+            'extraction_summary_only': self.extraction_summary_only,
             'extraction_success_rate': round(self.extraction_success_rate, 2),
             'embedded': self.embedded,
             'embed_failed': self.embed_failed,
@@ -441,11 +445,18 @@ def run_ingestion(db: SupabaseDB, sources: List[Dict], summary_only: bool = Fals
         # and keep the RSS summary/snippet instead.
         entry_summary_only = summary_only or used_fallback
 
-        for entry in entries[:50]:  # cap per-source to keep run bounded
+        # Batch existence check: one round trip for the whole source instead of
+        # one per entry (Finding 7 — collapses up to 50 round trips into 1).
+        entries_batch = entries[:50]
+        entry_links = [e.get('link', '') for e in entries_batch if e.get('link')]
+        existing = db.get_existing_urls(entry_links)
+
+        for entry in entries_batch:
             stats.articles_total += 1
             link = entry.get('link', '')
-            if db.article_exists(link):
-                logger.debug(f"  Skipping duplicate: {entry.get('title', 'No title')}")
+            if not link or link in existing:
+                if link:
+                    logger.debug(f"  Skipping duplicate: {entry.get('title', 'No title')}")
                 continue
 
             article_data, extraction_status = process_entry(entry, source_id, summary_only=entry_summary_only)
@@ -458,6 +469,11 @@ def run_ingestion(db: SupabaseDB, sources: List[Dict], summary_only: bool = Fals
                 stats.extraction_timeout += 1
             elif extraction_status == "other":
                 stats.extraction_other += 1
+            elif extraction_status == "skipped":
+                # summary-only / fallback feed: captured via RSS summary, no
+                # full-text extraction was attempted. Count separately so it
+                # neither inflates nor deflates the extraction success rate.
+                stats.extraction_summary_only += 1
             else:
                 stats.extraction_success += 1
 
@@ -467,7 +483,7 @@ def run_ingestion(db: SupabaseDB, sources: List[Dict], summary_only: bool = Fals
                 logger.debug(f"  Inserted: {article_data['title'][:50]}...")
                 # Phase 2 (best-effort): embed inline so fresh articles get vectors
                 # without a re-scan. Never fail ingestion if Ollama is down/slow.
-                if _EMBED_AVAILABLE and not db._use_sqlite and db.supabase is not None:
+                if _EMBED_AVAILABLE and db.supabase is not None:
                     try:
                         vec = embed_texts([f"{article_data['title']}\n\n{article_data.get('summary') or ''}"])
                         store_embedding(db.supabase, new_id, vec[0])
@@ -541,12 +557,14 @@ def main():
     print()
     print(f"Articles processed:     {stats.articles_total}")
     print(f"Articles new:           {stats.articles_new}")
-    print(f"Full-text extraction:   {stats.extraction_success}")
+    print(f"Full-text extracted:    {stats.extraction_success}")
+    print(f"Summary-only (fallback):{stats.extraction_summary_only}")
     print(f"Extraction failed:      {stats.extraction_failed}")
     print(f"Extraction blocked:     {stats.extraction_blocked}")
     print(f"Extraction timeout:     {stats.extraction_timeout}")
     print(f"Extraction other:       {stats.extraction_other}")
-    print(f"Extraction success rate: {stats.extraction_success_rate:.1f}% (target: >=70%)")
+    print(f"Extraction success rate: {stats.extraction_success_rate:.1f}% "
+          f"(target: >=70%, over {stats.extraction_attempted} attempted full-text extractions)")
     print()
     print(f"Embedded (inline):      {stats.embedded}")
     print(f"Embed failed:           {stats.embed_failed}")

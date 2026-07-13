@@ -140,17 +140,16 @@ def load_and_normalize_source_bias(client) -> Tuple[
 # --------------------------------------------------------------------------
 # per-cluster computation (Stages B + C)
 # --------------------------------------------------------------------------
-def compute_cluster(client, sid: str, lean_by_source: Dict[str, str],
-                    vocabulary: Set[str], missing_bias_sources: Set[str],
-                    representative_title: Optional[str] = None) -> Dict:
-    """Compute bias_distribution + coverage + blindspot flag for one cluster."""
-    members = (client.table("articles")
-               .select("id, source_id, title")
-               .eq("cluster_id", sid)
-               .is_("canonical_article_id", "null")  # canonical-only
-               .execute()
-               .data) or []
+def compute_cluster_from_members(members: List[Dict], lean_by_source: Dict[str, str],
+                                  vocabulary: Set[str], missing_bias_sources: Set[str],
+                                  representative_title: Optional[str] = None) -> Dict:
+    """Compute bias_distribution + coverage + blindspot flag for one cluster.
 
+    Pure function of an already-fetched ``members`` list (canonical articles).
+    Finding 10: no DB read inside this function — the caller fetches all
+    canonical articles once and groups them by cluster_id, so this runs with
+    zero network round trips.
+    """
     total_canonical = len(members)
 
     # full vocabulary, initialized to zero so the distribution always lists
@@ -257,23 +256,40 @@ def run_bias(client) -> Dict:
                .select("id, representative_title")
                .execute()
                .data) or []
+
+    # Finding 10: fetch ALL canonical articles across every story in ONE query,
+    # then group them by cluster_id in Python. No per-story round trip.
+    all_members = (client.table("articles")
+                   .select("id, source_id, title, cluster_id")
+                   .is_("canonical_article_id", "null")
+                   .execute()
+                   .data) or []
+    members_by_story: Dict[str, List[dict]] = {}
+    for m in all_members:
+        cid = m.get("cluster_id")
+        if cid:
+            members_by_story.setdefault(cid, []).append(m)
+
     missing_bias_sources: Set[str] = set()
 
     flagged = 0
     below_gate = 0
     non_political_excluded = 0
     updated = 0
+    updates = []
     for st in stories:
         sid = st["id"]
-        res = compute_cluster(client, sid, lean_by_source, vocabulary,
-                              missing_bias_sources,
-                              representative_title=st.get("representative_title"))
-        client.table("stories").update({
+        members = members_by_story.get(sid, [])
+        res = compute_cluster_from_members(members, lean_by_source, vocabulary,
+                                           missing_bias_sources,
+                                           representative_title=st.get("representative_title"))
+        updates.append({
+            "id": sid,
             "bias_distribution": res["bias_distribution"],
             "bias_coverage_pct": res["bias_coverage_pct"],
             "is_blindspot": res["is_blindspot"],
             "blindspot_checked_at": now,
-        }).eq("id", sid).execute()
+        })
         updated += 1
         if res["is_blindspot"]:
             flagged += 1
@@ -281,6 +297,10 @@ def run_bias(client) -> Dict:
             below_gate += 1
         if not res["is_political"]:
             non_political_excluded += 1
+
+    # One batched write instead of one .update() per story (Finding 10).
+    if updates:
+        client.table("stories").upsert(updates).execute()
 
     if missing_bias_sources:
         logger.warning("Stage B: %d source(s) had canonical articles but NO "
