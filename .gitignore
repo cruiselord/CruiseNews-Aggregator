@@ -21,6 +21,7 @@ ingest_report.json
 
 # Local databases and caches
 *.db
+*.sqlite
 *.sqlite3
 .DS_Store
 
