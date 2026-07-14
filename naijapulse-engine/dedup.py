@@ -126,13 +126,27 @@ def _parse_ts(s: Optional[str]) -> datetime.datetime:
 # --------------------------------------------------------------------------
 def load_pending(client) -> List[Dict]:
     """Articles without dedup_checked_at, joined with their Phase 2 embedding."""
-    arts = (
-        client.table("articles")
-        .select("id, title, summary, full_text, published_at, fetched_at")
-        .is_("dedup_checked_at", "null")
-        .execute()
-        .data
-    ) or []
+    # PostgREST caps a single .execute() at 1000 rows; page through with .range()
+    # so a large pending set is never silently truncated (the same class of bug as
+    # the report() whole-table fetch below, and Finding 7 elsewhere).
+    arts: List[Dict] = []
+    chunk_size = 100
+    start = 0
+    while True:
+        rows = (
+            client.table("articles")
+            .select("id, title, summary, full_text, published_at, fetched_at")
+            .is_("dedup_checked_at", "null")
+            .range(start, start + chunk_size - 1)
+            .execute()
+            .data
+        ) or []
+        if not rows:
+            break
+        arts.extend(rows)
+        if len(rows) < chunk_size:
+            break
+        start += chunk_size
     if not arts:
         return []
     ids = [a["id"] for a in arts]
@@ -323,12 +337,28 @@ def report(pending, groups, confirmed, near_misses, client) -> None:
     # source names
     src_rows = client.table("sources").select("id, name").execute().data or []
     src = {s["id"]: s["name"] for s in src_rows}
-    art_rows = (
-        client.table("articles")
-        .select("id, source_id, title, published_at, canonical_article_id")
-        .execute()
-        .data
-    ) or []
+    # PostgREST caps a single .execute() at 1000 rows. The articles table now
+    # exceeds that, so an unbounded query silently truncates and drops IDs that
+    # appear in duplicate groups - the per-group listing below would then crash
+    # on meta[m] (KeyError). Page through the whole table with .range() so meta
+    # is complete and the "Total articles" / "canonical set" stats stay accurate.
+    art_rows: List[Dict] = []
+    chunk_size = 100
+    start = 0
+    while True:
+        rows = (
+            client.table("articles")
+            .select("id, source_id, title, published_at, canonical_article_id")
+            .range(start, start + chunk_size - 1)
+            .execute()
+            .data
+        ) or []
+        if not rows:
+            break
+        art_rows.extend(rows)
+        if len(rows) < chunk_size:
+            break
+        start += chunk_size
     meta = {r["id"]: r for r in art_rows}
 
     print("\n" + "=" * 72)
