@@ -28,13 +28,16 @@ See PHASE6_BUILD.md for the full spec and acceptance tests.
 
 import os
 import json
+import uuid
 from collections import Counter
 from functools import lru_cache
 from typing import Dict, List, Optional
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from starlette.responses import Response
 from supabase import create_client
 
@@ -183,15 +186,77 @@ def _story_is_political(story: dict,
 # --------------------------------------------------------------------------
 # app
 # --------------------------------------------------------------------------
+import logging
+import time
+
+# Configure logger for detailed request/response logs
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(message)s",
+    handlers=[logging.FileHandler("/tmp/phase6_api.log"), logging.StreamHandler()],
+)
+
 app = FastAPI(
     title="NaijaPulse Engine - Phase 6 Read-only API",
     version="6.0.0",
     description="Read-only HTTP surface over the pipeline's Supabase data.",
 )
 
+# CORS: the UI is served from this same process at "/" (same-origin, no CORS
+# needed there), but it can also be opened standalone (file://) or from another
+# localhost port, in which case the browser needs CORS to call the API. This is
+# a read-only GET surface, so a permissive origin list is acceptable here —
+# pair it with RLS + anon-SELECT-only policies before any production exposure.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["GET", "OPTIONS"],
+    allow_headers=["*"],
+)
+
+# Middleware to log each request's method, path, status, and duration
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import Response as StarletteResponse
+
+class LoggingMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        start = time.time()
+        try:
+            response: StarletteResponse = await call_next(request)
+            status = response.status_code
+        except Exception as exc:
+            status = 500
+            raise
+        finally:
+            duration = (time.time() - start) * 1000  # ms
+            logging.info(
+                f"{request.method} {request.url.path} -> {status} in {duration:.2f}ms"
+            )
+        return response
+
+app.add_middleware(LoggingMiddleware)
+
+
 
 @app.get("/")
 def root():
+    # Serve the front-end at the root when it is present; this beats the
+    # static mount for the exact "/" path (explicit routes win). When the UI
+    # folder is absent we fall back to a small API info document.
+    if os.path.isdir(_UI_DIR):
+        return FileResponse(os.path.join(_UI_DIR, "index.html"))
+    return {
+        "service": "naijapulse-engine phase6 read-only api",
+        "status": "ok",
+        "endpoints": ["/stories", "/stories/{id}", "/sources",
+                      "/pipeline-health"],
+        "note": "read-only; article bodies are never returned",
+    }
+
+
+@app.get("/api")
+def api_info():
     return {
         "service": "naijapulse-engine phase6 read-only api",
         "status": "ok",
@@ -258,6 +323,12 @@ def list_stories(
 # --------------------------------------------------------------------------
 @app.get("/stories/{story_id}")
 def get_story(story_id: str):
+    # A malformed id (e.g. a stale/expired link) is "not found", not a 500.
+    try:
+        uuid.UUID(story_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="story not found")
+
     client = get_client()
 
     rows = (client.table("stories")
@@ -344,7 +415,8 @@ def list_sources():
                .data) or []
 
     bias_rows = (client.table("source_bias")
-                 .select("source_id, ownership_lean, confidence, notes")
+                 .select("source_id, ownership_lean, confidence, notes, "
+                         "regional_base")
                  .execute()
                  .data) or []
     bias_by_source = {r["source_id"]: r for r in bias_rows}
@@ -367,6 +439,7 @@ def list_sources():
             "ownership_lean": b.get("ownership_lean") if b else None,
             "confidence": b.get("confidence") if b else None,
             "notes": b.get("notes") if b else None,
+            "regional_base": b.get("regional_base") if b else None,
             "canonical_article_count": canonical_per_source.get(s["id"], 0),
         })
 
@@ -540,3 +613,14 @@ def _scrub(obj):
     elif isinstance(obj, list):
         for v in obj:
             _scrub(v)
+
+
+# --------------------------------------------------------------------------
+# static UI mount
+# --------------------------------------------------------------------------
+# Serve the front-end from this same process so the app is reachable at "/"
+# (same-origin -> no CORS needed for the in-app fetches). FastAPI routes above
+# take precedence over this mount, so /stories etc. still hit the API.
+_UI_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ui")
+if os.path.isdir(_UI_DIR):
+    app.mount("/", StaticFiles(directory=_UI_DIR, html=True), name="ui")

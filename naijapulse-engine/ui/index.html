@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NaijaPulse — See every side of every Nigerian story</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,450;9..144,560;9..144,650;9..144,780&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ============ TOP HEADER (replaces sidebar) ============ -->
+<header class="topbar" id="topbar">
+  <button class="hamburger" id="hamburger" title="Menu">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+  </button>
+
+  <div class="brand" id="brandHome">
+    <div class="brand-mark"></div>
+    <div class="brand-name">Naija<b>Pulse</b></div>
+  </div>
+
+  <!-- header menu (former sidebar nav) -->
+  <nav class="topmenu" id="topmenu">
+    <button class="menu-btn active" data-view="stories">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+      <span class="lbl">Stories</span><span class="count" data-count="stories">0</span>
+    </button>
+    <button class="menu-btn" data-view="sources">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/></svg>
+      <span class="lbl">Sources</span><span class="count" data-count="sources">0</span>
+    </button>
+    <button class="menu-btn" data-view="health">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg>
+      <span class="lbl">Pipeline Health</span>
+    </button>
+  </nav>
+
+  <div class="search-box">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+    <input type="text" id="searchInput" placeholder="Search stories, outlets, or people…">
+  </div>
+
+  <div class="topbar-meta">
+    <span class="live-line"><span class="pulse-dot"></span>Snapshot <b class="mono">live</b></span>
+    <span id="clockLine" class="mono">Tue, Jul 14 2026</span>
+    <button class="theme-toggle" id="themeToggle" title="Toggle light / dark">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+    </button>
+  </div>
+</header>
+
+<!-- backdrop for mobile drawers -->
+<div class="rail-backdrop" id="railBackdrop"></div>
+
+<!-- ============ 3-COLUMN SHELL ============ -->
+<div class="app" id="app">
+
+  <!-- ------------ LEFT RAIL ------------ -->
+  <aside class="left-rail" id="leftRail">
+    <div class="rail-inner">
+      <div class="rail-card-panel">
+        <h4>Regional Coverage <span class="mini-note">where outlets sit</span></h4>
+        <div id="regionTrack"></div>
+      </div>
+
+      <div class="rail-card-panel" id="balanceTrack"></div>
+
+      <div class="rail-card-panel" id="snapTrack"></div>
+
+      <div class="rail-card-panel">
+        <h4>Browse by topic</h4>
+        <div id="topicCards"></div>
+      </div>
+
+      <div class="rail-card-panel" id="timelineTrack"></div>
+    </div>
+  </aside>
+
+  <!-- ------------ CENTER ------------ -->
+  <main class="center" id="center">
+
+    <nav class="topic-bar" id="topicBar"></nav>
+
+    <div class="ad-slot leaderboard" data-ad="leaderboard-top">
+      <span class="tag">Advertisement</span><span>Google AdSense · 728×90 leaderboard</span>
+    </div>
+
+    <!-- ===== VIEW: STORIES (home) ===== -->
+    <section id="view-stories">
+
+      <!-- Trending carousel (replaces bias hero) -->
+      <div class="carousel-section">
+        <div class="rail-head">
+          <h2>Trending now</h2>
+          <span class="sub">The biggest story, and what's circling it</span>
+        </div>
+        <div id="carouselTrack"></div>
+      </div>
+
+      <!-- Controls -->
+      <div class="controls-row">
+        <div class="control-group">
+          <span class="control-label">Sort</span>
+          <div class="sort-toggle" id="sortToggle">
+            <button class="active" data-sort="recent">Recent</button>
+            <button data-sort="covered">Most-covered</button>
+          </div>
+        </div>
+        <div class="control-group slider-wrap">
+          <span class="control-label">Min outlets</span>
+          <input type="range" id="minOutlets" min="1" max="30" value="1">
+          <span class="slider-val mono" id="minOutletsVal">1</span>
+        </div>
+        <label class="check-pill"><input type="checkbox" id="politicalOnly"> Political only</label>
+        <label class="check-pill"><input type="checkbox" id="hideLowConf"> Hide low-confidence</label>
+      </div>
+
+      <div class="feed" id="feedTrack"></div>
+      <div class="pagination-ctl" id="feedPager"></div>
+    </section>
+
+    <!-- ===== VIEW: STORY DETAIL ===== -->
+    <section id="view-story-detail" hidden>
+      <a class="back-link" id="backToFeed">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 6l-6 6 6 6"/></svg> Back to Stories
+      </a>
+
+      <!-- big photo + summary -->
+      <div class="story-hero">
+        <div class="story-photo" id="storyPhoto"></div>
+        <div class="story-headline" id="storyHeadline"></div>
+      </div>
+      <div class="story-summary" id="storySummary"></div>
+
+      <!-- 3-zone body -->
+      <div class="story-body">
+        <aside class="story-left" id="storyLeft"></aside>
+        <div class="story-center" id="storyCenter"></div>
+        <aside class="story-right" id="storyRight"></aside>
+      </div>
+    </section>
+
+    <!-- ===== VIEW: SOURCES ===== -->
+    <section id="view-sources" hidden>
+      <div class="page-head">
+        <h1>Sources</h1>
+        <p>Every outlet NaijaPulse tracks, with its ownership lean, confidence, and how much of the feed it contributes. Click a card to locate it on the live map. Leans reflect ownership and editorial pattern — not a verdict on accuracy.</p>
+      </div>
+      <div class="sources-toolbar">
+        <div class="sort-toggle" id="sourceSortToggle">
+          <button class="active" data-ssort="volume">By volume</button>
+          <button data-ssort="alpha">A–Z</button>
+        </div>
+      </div>
+
+      <!-- live map panel (kept engaging here) -->
+      <div class="map-section" id="sourcesMapPanel">
+        <div class="map-layout">
+          <div class="map-wrap">
+            <div id="leafletMap"></div>
+            <div class="map-fallback" id="mapFallback" style="display:none;"></div>
+          </div>
+          <div class="loc-panel" id="locPanel"></div>
+        </div>
+      </div>
+
+      <div class="sources-grid" id="sourcesGrid"></div>
+    </section>
+
+    <!-- ===== VIEW: HEALTH ===== -->
+    <section id="view-health" hidden>
+      <div class="page-head">
+        <h1>Pipeline Health</h1>
+        <p>NaijaPulse is a snapshot, not a live stream — it reflects the last pipeline run. We show our own data quality openly, because trust here should be earned by disclosure, not assumed.</p>
+      </div>
+      <div class="health-grid" id="healthStats"></div>
+      <div class="health-section">
+        <h3>Methodology</h3>
+        <div class="accordion" id="accordion">
+          <div class="accordion-item">
+            <div class="accordion-head">How we cluster a Story <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></div>
+            <div class="accordion-body"><p>Articles are embedded with a local model, near-duplicates collapsed to one canonical article, then canonical articles about the same real-world event are clustered into a single Story. One Story = one event, across every outlet that covered it.</p></div>
+          </div>
+          <div class="accordion-item">
+            <div class="accordion-head">The four-lean taxonomy <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></div>
+            <div class="accordion-body"><p><b style="color:var(--lean-pro)">Pro-government</b>, <b style="color:var(--lean-anti)">anti-government</b>, <b style="color:#8AC7C0">mixed</b>, and <b style="color:#AEB9C6">independent</b> — a richer read on the Nigerian media landscape than a binary left/right split. Leans are set at the outlet level from ownership and editorial pattern, reviewed periodically, and shown as "unknown" rather than guessed when we don't have enough signal.</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== GLOBAL FOOTER ===== -->
+    <footer class="site-footer" id="siteFooter"></footer>
+
+  </main>
+
+  <!-- ------------ RIGHT RAIL ------------ -->
+  <aside class="right-rail" id="rightRail">
+    <div class="rail-inner">
+      <div class="rail-card-panel" id="biasSpectrumTrack"></div>
+      <div class="rail-card-panel methodology-panel">
+        <h4>How to read this</h4>
+        <p>Bias tags reflect <b>ownership lean</b>, not fact-checking. The spectrum shows how today's coverage splits across pro-government, anti-government, mixed, and independent outlets.</p>
+      </div>
+    </div>
+  </aside>
+
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="classifier.js"></script>
+<script src="geo.js"></script>
+<script src="staticmap.js"></script>
+<script src="map.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

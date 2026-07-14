@@ -44,18 +44,50 @@ logger = logging.getLogger(__name__)
 SUPABASE_URL = os.getenv('SUPABASE_URL')
 SUPABASE_KEY = os.getenv('SUPABASE_KEY')
 
-# 10 Nigerian RSS outlets (from spec Section 5)
+# 25+ sources across Nigerian (politics/economy), Sports, International, African, and Entertainment categories
 SOURCES = [
-    {"name": "Punch", "rss_url": "https://punchng.com/feed", "homepage_url": "https://punchng.com"},
-    {"name": "Vanguard", "rss_url": "https://www.vanguardngr.com/feed", "homepage_url": "https://www.vanguardngr.com"},
-    {"name": "Premium Times", "rss_url": "https://www.premiumtimesng.com/feed", "homepage_url": "https://www.premiumtimesng.com"},
-    {"name": "Daily Post", "rss_url": "https://dailypost.ng/feed", "homepage_url": "https://dailypost.ng"},
-    {"name": "ThisDay", "rss_url": "https://www.thisdaylive.com/index.php/feed", "homepage_url": "https://www.thisdaylive.com"},
-    {"name": "Tribune", "rss_url": "https://tribuneonlineng.com/feed", "homepage_url": "https://tribuneonlineng.com"},
-    {"name": "Daily Trust", "rss_url": "https://dailytrust.com/feed", "homepage_url": "https://dailytrust.com"},
-    {"name": "Guardian NG", "rss_url": "https://guardian.ng/feed", "homepage_url": "https://guardian.ng"},
-    {"name": "The Nation", "rss_url": "https://thenationonlineng.net/feed", "homepage_url": "https://thenationonlineng.net"},
-    {"name": "BusinessDay", "rss_url": "https://businessday.ng/feed", "homepage_url": "https://businessday.ng"},
+    # === NIGERIAN POLITICS / GENERAL NEWS ===
+    {"name": "Punch", "rss_url": "https://punchng.com/feed", "homepage_url": "https://punchng.com", "country": "NG"},
+    {"name": "Vanguard", "rss_url": "https://www.vanguardngr.com/feed", "homepage_url": "https://www.vanguardngr.com", "country": "NG"},
+    {"name": "Premium Times", "rss_url": "https://www.premiumtimesng.com/feed", "homepage_url": "https://www.premiumtimesng.com", "country": "NG"},
+    {"name": "Daily Post", "rss_url": "https://dailypost.ng/feed", "homepage_url": "https://dailypost.ng", "country": "NG"},
+    {"name": "ThisDay", "rss_url": "https://www.thisdaylive.com/index.php/feed", "homepage_url": "https://www.thisdaylive.com", "country": "NG"},
+    {"name": "Tribune", "rss_url": "https://tribuneonlineng.com/feed", "homepage_url": "https://tribuneonlineng.com", "country": "NG"},
+    {"name": "Daily Trust", "rss_url": "https://dailytrust.com/feed", "homepage_url": "https://dailytrust.com", "country": "NG"},
+    {"name": "Guardian NG", "rss_url": "https://guardian.ng/feed", "homepage_url": "https://guardian.ng", "country": "NG"},
+    {"name": "The Nation", "rss_url": "https://thenationonlineng.net/feed", "homepage_url": "https://thenationonlineng.net", "country": "NG"},
+    {"name": "BusinessDay", "rss_url": "https://businessday.ng/feed", "homepage_url": "https://businessday.ng", "country": "NG"},
+    {"name": "TheCable", "rss_url": "https://www.thecable.ng/feed", "homepage_url": "https://www.thecable.ng", "country": "NG"},
+    {"name": "Channels TV", "rss_url": "https://www.channelstv.com/feed/", "homepage_url": "https://www.channelstv.com", "country": "NG"},
+    {"name": "Sahara Reporters", "rss_url": "https://saharareporters.com/rss.xml", "homepage_url": "https://saharareporters.com", "country": "NG"},
+    {"name": "Peoples Gazette", "rss_url": "https://gazettengr.com/feed/", "homepage_url": "https://gazettengr.com", "country": "NG"},
+    {"name": "Leadership", "rss_url": "https://leadership.ng/feed/", "homepage_url": "https://leadership.ng", "country": "NG"},
+
+    # === NIGERIAN BUSINESS / ECONOMY ===
+    {"name": "Nairametrics", "rss_url": "https://nairametrics.com/feed/", "homepage_url": "https://nairametrics.com", "country": "NG"},
+    {"name": "The Whistler", "rss_url": "https://thewhistler.ng/feed/", "homepage_url": "https://thewhistler.ng", "country": "NG"},
+    {"name": "Financial Watch", "rss_url": "https://financialwatchngr.com/feed/", "homepage_url": "https://financialwatchngr.com", "country": "NG"},
+    {"name": "Blueprint", "rss_url": "https://blueprint.ng/feed/", "homepage_url": "https://blueprint.ng", "country": "NG"},
+
+    # === SPORTS (International + Nigerian) ===
+    {"name": "ESPN", "rss_url": "http://static.espncricinfo.com/rss/stories/english/61.xml", "homepage_url": "https://www.espncricinfo.com", "country": "International"},
+    {"name": "BBC Sport", "rss_url": "http://feeds.bbci.co.uk/sport/rss.xml", "homepage_url": "https://www.bbc.com/sport", "country": "GB"},
+    {"name": "Premium Times Sports", "rss_url": "https://www.premiumtimesng.com/category/sports/feed/", "homepage_url": "https://www.premiumtimesng.com", "country": "NG"},
+    {"name": "Sporting Life", "rss_url": "https://sportinglife.ng/feed/", "homepage_url": "https://sportinglife.ng", "country": "NG"},
+
+    # === INTERNATIONAL NEWS ===
+    {"name": "BBC News", "rss_url": "https://feeds.bbci.co.uk/news/rss.xml", "homepage_url": "https://www.bbc.com/news", "country": "GB"},
+    {"name": "Al Jazeera", "rss_url": "https://www.aljazeera.com/xml/rss/all.xml", "homepage_url": "https://www.aljazeera.com", "country": "QA"},
+    {"name": "France24 Africa", "rss_url": "https://www.france24.com/en/africa/rss", "homepage_url": "https://www.france24.com/en/africa", "country": "FR"},
+
+    # === AFRICAN SOURCES (ex-Nigeria) ===
+    {"name": "MyJoyOnline", "rss_url": "https://www.myjoyonline.com/feed/", "homepage_url": "https://www.myjoyonline.com", "country": "GH"},
+    {"name": "Standard Digital", "rss_url": "https://www.standardmedia.co.ke/rss", "homepage_url": "https://www.standardmedia.co.ke", "country": "KE"},
+
+    # === NIGERIAN ENTERTAINMENT ===
+    {"name": "Information Nigeria", "rss_url": "https://informationng.com/feed", "homepage_url": "https://informationng.com", "country": "NG"},
+    {"name": "BellaNaija", "rss_url": "https://www.bellanaija.com/feed", "homepage_url": "https://www.bellanaija.com", "country": "NG"},
+    {"name": "tooXclusive", "rss_url": "https://tooxclusive.com/feed/", "homepage_url": "https://tooxclusive.com", "country": "NG"},
 ]
 
 # Several Nigerian outlets (Punch, Vanguard, Guardian NG, The Nation, ...) block
@@ -117,7 +149,7 @@ class SupabaseDB:
                     'name': src['name'],
                     'rss_url': src['rss_url'],
                     'homepage_url': src['homepage_url'],
-                    'country': 'NG',
+                    'country': src.get('country', 'NG'),
                     'active': True
                 }).execute()
                 if result.data:

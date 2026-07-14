@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NaijaPulse — See every side of every Nigerian story</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,450;9..144,560;9..144,650;9..144,780&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============ TOKENS ============ */
+:root{
+  --ink-950:#090C0A; --ink-900:#0E1410; --ink-850:#131A15; --ink-800:#182019; --ink-750:#1D261F;
+  --paper-rgb:247,242,229;
+  --glass-border:rgba(217,164,65,.16);
+  --glass-border-soft:rgba(237,231,216,.08);
+  --accent:#2E8B69; --accent-dim:#1F6F54; --accent-bright:#4FBF95;
+  --gold:#D9A441; --gold-dim:#B98A34;
+  --text:#EDE7D8; --text-dim:#B8B3A2; --text-faint:#7C7A6E;
+  --lean-pro:#E0A845; --lean-anti:#C1443C; --lean-mixed:#4C8C86; --lean-indep:#6E7B8B; --lean-unk:#4A4E48;
+  --radius-lg:20px; --radius-md:14px; --radius-sm:9px;
+  --font-display:'Fraunces',Georgia,serif; --font-body:'Inter',system-ui,-apple-system,sans-serif; --font-mono:'IBM Plex Mono',monospace;
+  --shadow-card:0 1px 2px rgba(0,0,0,.3), 0 12px 32px -12px rgba(0,0,0,.55);
+  --shadow-lift:0 2px 4px rgba(0,0,0,.35), 0 20px 44px -14px rgba(0,0,0,.65);
+  --sidebar-w:250px; --sidebar-w-collapsed:78px;
+  --dur:.5s; --ease:cubic-bezier(.19,1,.22,1);
+}
+html[data-theme="light"]{
+  --ink-950:#F4F0E4; --ink-900:#EFEADC; --ink-850:#E9E3D2; --ink-800:#E2DBC7; --ink-750:#DAD2BA;
+  --glass-border:rgba(120,90,30,.18); --glass-border-soft:rgba(30,26,16,.08);
+  --text:#211D14; --text-dim:#5B5645; --text-faint:#8A836C;
+  --shadow-card:0 1px 2px rgba(60,50,20,.06), 0 12px 28px -14px rgba(60,50,20,.18);
+  --shadow-lift:0 2px 4px rgba(60,50,20,.08), 0 18px 36px -14px rgba(60,50,20,.24);
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  font-family:var(--font-body); background:var(--ink-950); color:var(--text);
+  min-height:100vh; overflow-x:hidden;
+  transition:background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+body::before{
+  content:""; position:fixed; inset:0; pointer-events:none; z-index:0; opacity:.05; mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+a{color:inherit; text-decoration:none;}
+button{font-family:inherit; cursor:pointer;}
+::selection{background:var(--accent); color:#fff;}
+:focus-visible{outline:2px solid var(--accent-bright); outline-offset:2px; border-radius:4px;}
+@media (prefers-reduced-motion: reduce){ *{animation-duration:.001s !important; transition-duration:.001s !important; scroll-behavior:auto !important;} }
+
+.mono{font-family:var(--font-mono);}
+.glass{
+  background:linear-gradient(160deg, rgba(var(--paper-rgb),.05), rgba(var(--paper-rgb),.02));
+  backdrop-filter:blur(18px) saturate(140%);
+  -webkit-backdrop-filter:blur(18px) saturate(140%);
+  border:1px solid var(--glass-border-soft);
+}
+.torn{
+  height:22px; width:100%;
+  background:var(--ink-900);
+  clip-path:polygon(0% 100%,2% 30%,5% 78%,8% 12%,11% 68%,14% 22%,17% 84%,20% 6%,23% 72%,26% 30%,29% 90%,32% 14%,35% 62%,38% 24%,41% 80%,44% 8%,47% 70%,50% 20%,53% 86%,56% 10%,59% 74%,62% 32%,65% 92%,68% 16%,71% 60%,74% 26%,77% 82%,80% 6%,83% 68%,86% 20%,89% 88%,92% 12%,95% 64%,98% 28%,100% 100%);
+}
+
+/* ============ APP SHELL ============ */
+.app{display:flex; min-height:100vh; position:relative; z-index:1;}
+
+/* Sidebar */
+.sidebar{
+  width:var(--sidebar-w); flex:0 0 auto; min-height:100vh; position:sticky; top:0;
+  display:flex; flex-direction:column; gap:4px; padding:22px 14px;
+  border-right:1px solid var(--glass-border-soft);
+  background:linear-gradient(180deg, rgba(var(--paper-rgb),.045), rgba(var(--paper-rgb),.015));
+  transition:width var(--dur) var(--ease), padding var(--dur) var(--ease);
+  z-index:40;
+}
+.sidebar.collapsed{width:var(--sidebar-w-collapsed); padding:22px 10px;}
+.brand{display:flex; align-items:center; gap:10px; padding:6px 8px 22px; overflow:hidden; white-space:nowrap;}
+.brand-mark{width:30px; height:30px; border-radius:9px; flex:0 0 auto; position:relative;
+  background:conic-gradient(from 220deg, var(--accent), var(--gold), var(--lean-anti), var(--accent));
+  box-shadow:0 0 0 3px rgba(217,164,65,.12);}
+.brand-mark::after{content:""; position:absolute; inset:5px; border-radius:6px; background:var(--ink-950);}
+.brand-name{font-family:var(--font-display); font-weight:650; font-size:19px; letter-spacing:.2px;}
+.brand-name b{color:var(--gold); font-weight:650;}
+.sidebar.collapsed .brand-name{opacity:0; width:0;}
+
+.nav-group{display:flex; flex-direction:column; gap:2px; margin-top:6px;}
+.nav-label{font-size:11px; text-transform:uppercase; letter-spacing:.12em; color:var(--text-faint); padding:14px 12px 6px; white-space:nowrap; overflow:hidden;}
+.sidebar.collapsed .nav-label{opacity:0; height:0; padding:0; margin:0;}
+.nav-item{
+  display:flex; align-items:center; gap:12px; padding:10px 12px; border-radius:var(--radius-sm);
+  color:var(--text-dim); border:1px solid transparent; background:transparent; text-align:left; width:100%;
+  transition:background .25s, color .25s, border-color .25s;
+  white-space:nowrap; overflow:hidden; position:relative;
+}
+.nav-item svg{flex:0 0 auto; width:19px; height:19px; opacity:.85;}
+.nav-item .lbl{font-size:14.5px; font-weight:500; overflow:hidden; text-overflow:ellipsis;}
+.nav-item .count{margin-left:auto; font-family:var(--font-mono); font-size:11px; color:var(--text-faint); background:var(--glass-border-soft); padding:2px 7px; border-radius:20px;}
+.nav-item:hover{background:rgba(var(--paper-rgb),.05); color:var(--text);}
+.nav-item.active{background:rgba(46,139,105,.14); color:var(--text); border-color:rgba(46,139,105,.3);}
+.nav-item.active svg{opacity:1; color:var(--accent-bright);}
+.nav-item.active::before{content:""; position:absolute; left:-14px; top:50%; transform:translateY(-50%); width:3px; height:60%; background:var(--accent-bright); border-radius:0 3px 3px 0;}
+.sidebar.collapsed .nav-item{justify-content:center; padding:11px;}
+.sidebar.collapsed .nav-item .lbl, .sidebar.collapsed .nav-item .count{display:none;}
+
+.sidebar-foot{margin-top:auto; display:flex; flex-direction:column; gap:10px;}
+.collapse-btn{
+  display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:var(--radius-sm);
+  background:var(--glass-border-soft); border:1px solid var(--glass-border-soft); color:var(--text-dim); font-size:13px;
+  transition:background .2s, color .2s;
+}
+.collapse-btn:hover{background:rgba(var(--paper-rgb),.08); color:var(--text);}
+.collapse-btn svg{transition:transform var(--dur) var(--ease);}
+.sidebar.collapsed .collapse-btn svg{transform:rotate(180deg);}
+.sidebar.collapsed .collapse-btn .lbl{display:none;}
+.sidebar.collapsed .collapse-btn{justify-content:center;}
+
+.methodology-mini{padding:12px; border-radius:var(--radius-sm); font-size:11.5px; line-height:1.5; color:var(--text-faint); border:1px dashed var(--glass-border);}
+.sidebar.collapsed .methodology-mini{display:none;}
+
+/* Main column */
+.main{flex:1 1 auto; min-width:0; display:flex; flex-direction:column;}
+.topbar{
+  position:sticky; top:0; z-index:30; display:flex; align-items:center; gap:16px;
+  padding:14px 28px; border-bottom:1px solid var(--glass-border-soft);
+  background:rgba(var(--paper-rgb),.03); backdrop-filter:blur(14px);
+}
+.hamburger{display:none; width:36px; height:36px; align-items:center; justify-content:center; border-radius:9px; background:var(--glass-border-soft); border:1px solid var(--glass-border-soft);}
+.search-box{
+  flex:1 1 auto; max-width:420px; display:flex; align-items:center; gap:9px;
+  padding:9px 14px; border-radius:30px; background:var(--glass-border-soft); border:1px solid var(--glass-border-soft); color:var(--text-faint);
+  transition:border-color .2s;
+}
+.search-box:focus-within{border-color:var(--accent);}
+.search-box input{background:none; border:none; outline:none; color:var(--text); font-size:13.5px; width:100%;}
+.topbar-meta{margin-left:auto; display:flex; align-items:center; gap:18px; font-size:12px; color:var(--text-faint); white-space:nowrap;}
+.pulse-dot{width:7px; height:7px; border-radius:50%; background:var(--accent-bright); box-shadow:0 0 0 0 rgba(79,191,149,.6); animation:pulse 2.4s infinite;}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(79,191,149,.55);}70%{box-shadow:0 0 0 8px rgba(79,191,149,0);}100%{box-shadow:0 0 0 0 rgba(79,191,149,0);}}
+.theme-toggle{width:38px; height:38px; border-radius:10px; background:var(--glass-border-soft); border:1px solid var(--glass-border-soft); display:flex; align-items:center; justify-content:center; color:var(--text-dim);}
+.theme-toggle:hover{color:var(--text);}
+
+/* Topic pills */
+.topic-bar{display:flex; align-items:center; gap:9px; padding:14px 28px; overflow-x:auto; border-bottom:1px solid var(--glass-border-soft); scrollbar-width:none;}
+.topic-bar::-webkit-scrollbar{display:none;}
+.pill{
+  flex:0 0 auto; padding:7px 15px; border-radius:22px; font-size:13px; font-weight:500;
+  background:var(--glass-border-soft); border:1px solid transparent; color:var(--text-dim); white-space:nowrap;
+  transition:all .2s;
+}
+.pill:hover{color:var(--text); border-color:var(--glass-border);}
+.pill.active{background:rgba(46,139,105,.16); color:var(--accent-bright); border-color:rgba(46,139,105,.4);}
+.pill .n{opacity:.6; font-family:var(--font-mono); font-size:11px; margin-left:5px;}
+
+/* ============ RAIL (left→right loading) ============ */
+.rail-section{padding:22px 28px 6px;}
+.rail-head{display:flex; align-items:baseline; justify-content:space-between; margin-bottom:14px;}
+.rail-head h2{font-family:var(--font-display); font-weight:650; font-size:21px;}
+.rail-head .sub{font-size:12.5px; color:var(--text-faint);}
+.rail{display:flex; gap:16px; overflow-x:auto; padding-bottom:14px; scroll-snap-type:x proximity;}
+.rail::-webkit-scrollbar{height:6px;}
+.rail::-webkit-scrollbar-thumb{background:var(--glass-border); border-radius:6px;}
+.rail-card{
+  flex:0 0 auto; width:300px; scroll-snap-align:start; border-radius:var(--radius-lg); overflow:hidden;
+  box-shadow:var(--shadow-card); border:1px solid var(--glass-border-soft);
+  opacity:0; transform:translateX(28px); animation:railIn .6s var(--ease) forwards;
+  background:var(--ink-900);
+}
+@keyframes railIn{to{opacity:1; transform:translateX(0);}}
+.rail-card .thumb{height:132px; position:relative;}
+.rail-card .thumb-fallback{height:132px; display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:11px; color:var(--text-faint); flex-direction:column; gap:6px;}
+.rail-card .body{padding:14px 15px 16px;}
+.rail-card h3{font-family:var(--font-display); font-size:15.5px; line-height:1.32; font-weight:560; margin-bottom:9px; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;}
+.badge-row{display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:9px;}
+
+/* ============ BADGES & CHIPS ============ */
+.badge{display:inline-flex; align-items:center; gap:5px; font-size:10.5px; font-weight:600; padding:3px 8px; border-radius:6px; letter-spacing:.02em;}
+.badge-blindspot{background:rgba(193,68,60,.16); color:#F0958D; border:1px solid rgba(193,68,60,.35);}
+.badge-blindspot svg{width:11px; height:11px;}
+.badge-political{background:rgba(217,164,65,.14); color:var(--gold); border:1px solid rgba(217,164,65,.3);}
+.badge-conv{font-family:var(--font-mono); font-size:10.5px; color:var(--text-dim); background:var(--glass-border-soft); padding:3px 8px; border-radius:6px;}
+.lean-chip{display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:600; padding:3px 9px; border-radius:20px; border:1px solid transparent;}
+.lean-chip .dot{width:7px; height:7px; border-radius:50%;}
+.lean-chip.pro{background:rgba(224,168,69,.13); color:var(--lean-pro); border-color:rgba(224,168,69,.3);}
+.lean-chip.anti{background:rgba(193,68,60,.13); color:var(--lean-anti); border-color:rgba(193,68,60,.3);}
+.lean-chip.mixed{background:rgba(76,140,134,.16); color:#8AC7C0; border-color:rgba(76,140,134,.35);}
+.lean-chip.indep{background:rgba(110,123,139,.16); color:#AEB9C6; border-color:rgba(110,123,139,.35);}
+.lean-chip.unk{background:transparent; color:var(--text-faint); border:1px dashed var(--glass-border);}
+
+/* Bias ribbon (compact stacked bar for cards) */
+.ribbon{display:flex; height:6px; border-radius:4px; overflow:hidden; background:var(--glass-border-soft); margin-bottom:9px;}
+.ribbon span{height:100%;}
+.ribbon .pro{background:var(--lean-pro);} .ribbon .anti{background:var(--lean-anti);}
+.ribbon .mixed{background:var(--lean-mixed);} .ribbon .indep{background:var(--lean-indep);}
+
+/* ============ AD SLOTS ============ */
+.ad-slot{
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+  border:1px dashed var(--glass-border); border-radius:var(--radius-md); color:var(--text-faint);
+  background:repeating-linear-gradient(135deg, rgba(var(--paper-rgb),.02) 0 10px, rgba(var(--paper-rgb),.035) 10px 20px);
+  font-size:11px; letter-spacing:.06em; text-transform:uppercase;
+}
+.ad-slot .tag{font-family:var(--font-mono); font-size:9.5px; padding:2px 8px; border:1px solid var(--glass-border); border-radius:20px;}
+.ad-slot.leaderboard{height:90px; margin:6px 28px;}
+.ad-slot.rect{height:250px; width:100%;}
+.ad-slot.skyscraper{height:600px; width:100%;}
+
+/* ============ STORY FEED ============ */
+.feed-layout{display:grid; grid-template-columns:1fr; gap:0;}
+.controls-row{display:flex; align-items:center; gap:22px; flex-wrap:wrap; padding:18px 28px 8px;}
+.control-group{display:flex; align-items:center; gap:10px;}
+.control-label{font-size:11.5px; color:var(--text-faint); text-transform:uppercase; letter-spacing:.08em; white-space:nowrap;}
+.sort-toggle{display:flex; background:var(--glass-border-soft); border-radius:22px; padding:3px; gap:2px;}
+.sort-toggle button{padding:6px 14px; border-radius:20px; border:none; background:transparent; color:var(--text-dim); font-size:12.5px; font-weight:500; transition:all .2s;}
+.sort-toggle button.active{background:var(--accent-dim); color:#fff;}
+.check-pill{display:flex; align-items:center; gap:7px; font-size:12.5px; color:var(--text-dim); cursor:pointer;}
+.check-pill input{accent-color:var(--accent);}
+
+.slider-wrap{display:flex; align-items:center; gap:10px; min-width:200px;}
+input[type="range"]{-webkit-appearance:none; appearance:none; width:150px; height:4px; border-radius:4px; background:var(--glass-border); outline:none;}
+input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none; width:15px; height:15px; border-radius:50%; background:var(--accent-bright); border:3px solid var(--ink-950); box-shadow:0 0 0 1px var(--accent-bright); cursor:pointer; margin-top:-1px;}
+input[type="range"]::-moz-range-thumb{width:15px; height:15px; border-radius:50%; background:var(--accent-bright); border:3px solid var(--ink-950); cursor:pointer;}
+.slider-val{font-family:var(--font-mono); font-size:12px; color:var(--accent-bright); min-width:20px;}
+
+.feed{display:flex; flex-direction:column; gap:14px; padding:14px 28px 60px; max-width:880px;}
+.story-card{
+  display:flex; gap:18px; padding:18px; border-radius:var(--radius-lg); cursor:pointer;
+  box-shadow:var(--shadow-card); border:1px solid var(--glass-border-soft);
+  background:linear-gradient(155deg, rgba(var(--paper-rgb),.045), rgba(var(--paper-rgb),.015));
+  opacity:0; transform:translateY(16px); animation:cardIn .55s var(--ease) forwards;
+  transition:box-shadow .3s, transform .3s, border-color .3s;
+}
+.story-card:hover{box-shadow:var(--shadow-lift); transform:translateY(-2px); border-color:var(--glass-border);}
+@keyframes cardIn{to{opacity:1; transform:translateY(0);}}
+.story-card .thumb{width:132px; height:132px; flex:0 0 auto; border-radius:var(--radius-md); overflow:hidden; position:relative;}
+.story-card .thumb-fallback{width:132px; height:132px; border-radius:var(--radius-md); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; font-family:var(--font-mono); font-size:9.5px; color:var(--text-faint); text-align:center; padding:6px;}
+.story-card .content{flex:1; min-width:0; display:flex; flex-direction:column;}
+.story-card h3{font-family:var(--font-display); font-weight:600; font-size:18px; line-height:1.32; margin-bottom:9px;}
+.story-card .meta-row{margin-top:auto; display:flex; align-items:center; gap:12px; font-size:11.5px; color:var(--text-faint); flex-wrap:wrap;}
+.confidence-chip{display:inline-flex; align-items:center; gap:5px; font-family:var(--font-mono); font-size:10.5px; color:var(--text-dim);}
+.confidence-chip .bar{width:34px; height:4px; border-radius:3px; background:var(--glass-border-soft); overflow:hidden;}
+.confidence-chip .bar i{display:block; height:100%; background:var(--accent-bright);}
+
+.photo-gradient{width:100%; height:100%; position:relative; overflow:hidden;}
+.photo-gradient::after{content:attr(data-icon); position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:26px; opacity:.35;}
+
+/* ============ SECTION HEADERS ============ */
+.page-head{padding:26px 28px 10px;}
+.page-head h1{font-family:var(--font-display); font-weight:650; font-size:30px; letter-spacing:-.01em;}
+.page-head p{color:var(--text-dim); font-size:14px; margin-top:6px; max-width:640px; line-height:1.5;}
+
+/* ============ STORY DETAIL ============ */
+.detail-grid{display:grid; grid-template-columns:minmax(0,1fr) 320px; gap:28px; padding:8px 28px 60px; align-items:start;}
+.back-link{display:inline-flex; align-items:center; gap:6px; padding:20px 28px 0; color:var(--text-dim); font-size:13px;}
+.back-link:hover{color:var(--text);}
+.detail-title{font-family:var(--font-display); font-weight:650; font-size:32px; line-height:1.22; margin:14px 0 16px;}
+.blindspot-banner{
+  display:flex; gap:12px; padding:14px 16px; border-radius:var(--radius-md); margin-bottom:18px;
+  background:rgba(193,68,60,.1); border:1px solid rgba(193,68,60,.3); align-items:flex-start;
+}
+.blindspot-banner svg{flex:0 0 auto; color:var(--lean-anti); margin-top:2px;}
+.blindspot-banner h4{font-size:13.5px; font-weight:700; color:#F0958D; margin-bottom:3px;}
+.blindspot-banner p{font-size:12.5px; color:var(--text-dim); line-height:1.5;}
+
+.panel{border-radius:var(--radius-lg); box-shadow:var(--shadow-card); border:1px solid var(--glass-border-soft);
+  background:linear-gradient(155deg, rgba(var(--paper-rgb),.045), rgba(var(--paper-rgb),.015)); padding:20px; margin-bottom:18px;}
+.panel h4{font-size:11.5px; text-transform:uppercase; letter-spacing:.1em; color:var(--text-faint); margin-bottom:14px; display:flex; align-items:center; justify-content:space-between;}
+
+.donut-wrap{display:flex; align-items:center; gap:22px;}
+.donut-wrap svg{flex:0 0 auto;}
+.donut-legend{flex:1; display:flex; flex-direction:column; gap:9px;}
+.legend-row{display:flex; align-items:center; gap:9px; font-size:12.5px;}
+.legend-row .dot{width:9px; height:9px; border-radius:2px;}
+.legend-row .lbl{flex:1; color:var(--text-dim); text-transform:capitalize;}
+.legend-row .val{font-family:var(--font-mono); color:var(--text);}
+
+.coverage-meter{margin-top:16px; padding-top:16px; border-top:1px solid var(--glass-border-soft);}
+.coverage-meter .track{height:7px; border-radius:6px; background:var(--glass-border-soft); overflow:hidden; margin:8px 0;}
+.coverage-meter .fill{height:100%; background:linear-gradient(90deg, var(--accent-dim), var(--accent-bright));}
+.coverage-meter .note{font-size:11.5px; color:var(--text-faint);}
+
+.member-list{display:flex; flex-direction:column; gap:2px;}
+.member{display:flex; gap:14px; align-items:center; padding:14px 4px; border-bottom:1px solid var(--glass-border-soft);}
+.member:last-child{border-bottom:none;}
+.member-avatar{width:38px; height:38px; border-radius:9px; flex:0 0 auto; display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:12px; font-weight:600; background:var(--glass-border-soft); color:var(--text-dim);}
+.member-body{flex:1; min-width:0;}
+.member-body .src-row{display:flex; align-items:center; gap:8px; margin-bottom:3px;}
+.member-body .src-name{font-weight:600; font-size:13px;}
+.member-body h5{font-size:14.5px; font-weight:500; line-height:1.4; margin-bottom:3px;}
+.member-body .sub{font-size:11.5px; color:var(--text-faint); display:flex; gap:10px; align-items:center;}
+.member-link{flex:0 0 auto; width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; background:var(--glass-border-soft); color:var(--text-dim); transition:all .2s;}
+.member-link:hover{background:var(--accent-dim); color:#fff;}
+
+.similar-tags{display:flex; flex-wrap:wrap; gap:8px;}
+.similar-tags a{font-size:12px; padding:6px 12px; border-radius:20px; background:var(--glass-border-soft); color:var(--text-dim);}
+.similar-tags a:hover{color:var(--text); background:rgba(var(--paper-rgb),.08);}
+
+/* ============ SOURCES ============ */
+.sources-toolbar{display:flex; gap:16px; align-items:center; padding:8px 28px 18px; flex-wrap:wrap;}
+.sources-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(250px,1fr)); gap:16px; padding:0 28px 60px;}
+.source-card{
+  padding:18px; border-radius:var(--radius-lg); box-shadow:var(--shadow-card); border:1px solid var(--glass-border-soft);
+  background:linear-gradient(155deg, rgba(var(--paper-rgb),.045), rgba(var(--paper-rgb),.015));
+  opacity:0; transform:translateY(14px); animation:cardIn .5s var(--ease) forwards;
+  transition:box-shadow .3s, transform .3s;
+}
+.source-card:hover{box-shadow:var(--shadow-lift); transform:translateY(-2px);}
+.source-card .top{display:flex; align-items:center; gap:12px; margin-bottom:14px;}
+.source-avatar{width:42px; height:42px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:700; font-family:var(--font-display); font-size:16px; flex:0 0 auto;}
+.source-card h4{font-size:15px; font-weight:650;}
+.source-card .url{font-size:11px; color:var(--text-faint);}
+.source-stats{display:flex; align-items:center; justify-content:space-between; margin-top:14px; padding-top:14px; border-top:1px solid var(--glass-border-soft);}
+.source-stats .vol{font-family:var(--font-mono); font-size:12px; color:var(--text-dim);}
+.confidence-label{font-size:10.5px; color:var(--text-faint); text-transform:uppercase; letter-spacing:.05em;}
+.source-note{font-size:11.5px; color:var(--text-faint); margin-top:10px; line-height:1.5; font-style:italic;}
+
+/* ============ BLINDSPOTS ============ */
+.demo-toggle-row{display:flex; align-items:center; gap:12px; padding:0 28px 18px;}
+.switch{position:relative; width:42px; height:24px; border-radius:14px; background:var(--glass-border-soft); border:1px solid var(--glass-border); flex:0 0 auto;}
+.switch::after{content:""; position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background:var(--text-dim); transition:all .25s var(--ease);}
+.switch.on{background:rgba(46,139,105,.3); border-color:var(--accent);}
+.switch.on::after{left:20px; background:var(--accent-bright);}
+
+.empty-state{display:flex; flex-direction:column; align-items:center; text-align:center; gap:14px; padding:70px 28px; max-width:440px; margin:0 auto;}
+.empty-icon{width:64px; height:64px; border-radius:18px; display:flex; align-items:center; justify-content:center; background:rgba(46,139,105,.1); border:1px solid rgba(46,139,105,.25); color:var(--accent-bright);}
+.empty-state h3{font-family:var(--font-display); font-size:20px; font-weight:600;}
+.empty-state p{color:var(--text-dim); font-size:13.5px; line-height:1.55;}
+.btn-ghost{padding:9px 18px; border-radius:22px; border:1px solid var(--glass-border); color:var(--text-dim); font-size:12.5px; font-weight:500; margin-top:4px;}
+.btn-ghost:hover{color:var(--text); border-color:var(--accent);}
+
+.blindspot-cols{display:grid; grid-template-columns:1fr 1fr; gap:24px; padding:0 28px 60px;}
+.blindspot-col h3{font-family:var(--font-display); font-weight:600; font-size:17px; margin-bottom:4px;}
+.blindspot-col .sub{font-size:12px; color:var(--text-faint); margin-bottom:14px;}
+.bs-card{padding:16px; border-radius:var(--radius-md); box-shadow:var(--shadow-card); border:1px solid var(--glass-border-soft);
+  background:linear-gradient(155deg, rgba(var(--paper-rgb),.045), rgba(var(--paper-rgb),.015)); margin-bottom:14px;}
+.bs-card h4{font-size:14.5px; font-weight:600; margin:8px 0 10px; line-height:1.35;}
+.bs-breakdown{display:flex; flex-direction:column; gap:5px;}
+.bs-row{display:grid; grid-template-columns:70px 1fr 34px; align-items:center; gap:8px; font-size:11px; color:var(--text-faint);}
+.bs-row .track{height:5px; border-radius:4px; background:var(--glass-border-soft); overflow:hidden;}
+.bs-row .track i{display:block; height:100%;}
+
+@media (max-width:1000px){.blindspot-cols{grid-template-columns:1fr;}}
+
+/* ============ HEALTH ============ */
+.health-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; padding:8px 28px 8px;}
+.stat-card{padding:18px; border-radius:var(--radius-lg); box-shadow:var(--shadow-card); border:1px solid var(--glass-border-soft);
+  background:linear-gradient(155deg, rgba(var(--paper-rgb),.045), rgba(var(--paper-rgb),.015));}
+.stat-card .big{font-family:var(--font-mono); font-size:30px; font-weight:600; color:var(--accent-bright);}
+.stat-card .lbl{font-size:12px; color:var(--text-faint); margin-top:4px;}
+
+.health-section{padding:26px 28px 8px;}
+.health-section h3{font-family:var(--font-display); font-weight:600; font-size:18px; margin-bottom:14px;}
+.feed-status-row{display:flex; align-items:center; gap:14px; padding:12px 0; border-bottom:1px solid var(--glass-border-soft); font-size:13px;}
+.feed-status-row:last-child{border-bottom:none;}
+.feed-status-row .lbl{flex:1; color:var(--text-dim);}
+.feed-status-row .v{font-family:var(--font-mono); color:var(--text);}
+.stacked-bar{display:flex; height:26px; border-radius:8px; overflow:hidden; margin:10px 0;}
+.stacked-bar span{display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:10px; color:#fff;}
+
+.accordion{border-top:1px solid var(--glass-border-soft);}
+.accordion-item{border-bottom:1px solid var(--glass-border-soft);}
+.accordion-head{display:flex; align-items:center; justify-content:space-between; padding:16px 4px; font-size:14px; font-weight:600;}
+.accordion-head svg{transition:transform .3s var(--ease); color:var(--text-faint);}
+.accordion-item.open .accordion-head svg{transform:rotate(45deg);}
+.accordion-body{max-height:0; overflow:hidden; transition:max-height .35s var(--ease);}
+.accordion-item.open .accordion-body{max-height:400px;}
+.accordion-body p{font-size:13px; color:var(--text-dim); line-height:1.6; padding:0 4px 16px;}
+
+.edge-gallery{display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:12px; padding:0 28px 60px;}
+.edge-tile{padding:14px; border-radius:var(--radius-md); border:1px dashed var(--glass-border); background:rgba(var(--paper-rgb),.02);}
+.edge-tile .k{font-family:var(--font-mono); font-size:10px; color:var(--gold); text-transform:uppercase; letter-spacing:.06em; margin-bottom:8px;}
+
+/* ============ FOOTER TICKER ============ */
+.footer-note{padding:20px 28px 40px; font-size:11.5px; color:var(--text-faint); border-top:1px solid var(--glass-border-soft); margin-top:20px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px;}
+
+/* ============ SCROLLBAR ============ */
+::-webkit-scrollbar{width:9px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--glass-border); border-radius:8px;}
+
+/* ============ RESPONSIVE ============ */
+@media (max-width:880px){
+  .detail-grid{grid-template-columns:1fr;}
+  .hamburger{display:flex;}
+  .sidebar{position:fixed; left:0; top:0; height:100vh; transform:translateX(-100%); box-shadow:0 0 60px rgba(0,0,0,.5);}
+  .sidebar.mobile-open{transform:translateX(0);}
+  .story-card{flex-direction:column;}
+  .story-card .thumb, .story-card .thumb-fallback{width:100%;}
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark"></div>
+      <div class="brand-name">Naija<b>Pulse</b></div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-label">Read</div>
+      <button class="nav-item active" data-view="stories">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+        <span class="lbl">Stories</span><span class="count">163</span>
+      </button>
+      <button class="nav-item" data-view="blindspots">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 000 18"/></svg>
+        <span class="lbl">Blindspots</span><span class="count">0</span>
+      </button>
+      <button class="nav-item" data-view="sources">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M9 9v11"/></svg>
+        <span class="lbl">Sources</span><span class="count">12</span>
+      </button>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-label">Trust</div>
+      <button class="nav-item" data-view="health">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg>
+        <span class="lbl">Pipeline Health</span>
+      </button>
+    </div>
+
+    <div class="sidebar-foot">
+      <div class="methodology-mini">Bias tags reflect <b style="color:var(--text-dim)">ownership lean</b>, not fact-checking. See Pipeline Health for methodology.</div>
+      <button class="collapse-btn" id="collapseBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 6l-6 6 6 6"/></svg>
+        <span class="lbl">Collapse</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <div class="main">
+    <header class="topbar">
+      <button class="hamburger" id="hamburger">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <div class="search-box">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input type="text" placeholder="Search stories, outlets, or people…">
+      </div>
+      <div class="topbar-meta">
+        <span style="display:flex;align-items:center;gap:7px;"><span class="pulse-dot"></span>Snapshot updated <b class="mono" style="color:var(--text)">6 min ago</b></span>
+        <span id="clockLine">Tue, Jul 14 2026</span>
+        <button class="theme-toggle" id="themeToggle" title="Toggle light / dark">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <nav class="topic-bar" id="topicBar">
+      <button class="pill active" data-topic="all">All Topics</button>
+      <button class="pill" data-topic="politics">Politics <span class="n">54</span></button>
+      <button class="pill" data-topic="security">Security <span class="n">29</span></button>
+      <button class="pill" data-topic="economy">Economy <span class="n">37</span></button>
+      <button class="pill" data-topic="elections">Elections 2027 <span class="n">18</span></button>
+      <button class="pill" data-topic="naira">Naira &amp; Markets <span class="n">14</span></button>
+      <button class="pill" data-topic="floods">Floods &amp; Climate <span class="n">9</span></button>
+      <button class="pill" data-topic="sports">Sports <span class="n">21</span></button>
+      <button class="pill" data-topic="entertainment">Entertainment <span class="n">12</span></button>
+    </nav>
+
+    <div class="ad-slot leaderboard" data-ad="leaderboard-top">
+      <span class="tag">Advertisement</span><span>Google AdSense · 728×90 leaderboard</span>
+    </div>
+
+    <!-- ============ VIEW: STORIES ============ -->
+    <section id="view-stories">
+      <div class="rail-section">
+        <div class="rail-head">
+          <h2>Trending right now</h2>
+          <span class="sub">Ranked by convergence · loads left → right</span>
+        </div>
+        <div class="rail" id="railTrack"></div>
+      </div>
+
+      <div class="controls-row">
+        <div class="control-group">
+          <span class="control-label">Sort</span>
+          <div class="sort-toggle" id="sortToggle">
+            <button class="active" data-sort="recent">Recent</button>
+            <button data-sort="covered">Most-covered</button>
+          </div>
+        </div>
+        <div class="control-group slider-wrap">
+          <span class="control-label">Min outlets</span>
+          <input type="range" id="minOutlets" min="1" max="30" value="1">
+          <span class="slider-val mono" id="minOutletsVal">1</span>
+        </div>
+        <label class="check-pill"><input type="checkbox" id="politicalOnly"> Political only</label>
+        <label class="check-pill"><input type="checkbox" id="hideLowConf"> Hide low-confidence</label>
+      </div>
+
+      <div class="feed" id="feedTrack"></div>
+    </section>
+
+    <!-- ============ VIEW: STORY DETAIL ============ -->
+    <section id="view-story-detail" hidden>
+      <a class="back-link" id="backToFeed">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 6l-6 6 6 6"/></svg> Back to Stories
+      </a>
+      <div class="detail-grid" id="detailGrid"><!-- injected --></div>
+    </section>
+
+    <!-- ============ VIEW: SOURCES ============ -->
+    <section id="view-sources" hidden>
+      <div class="page-head">
+        <h1>Sources</h1>
+        <p>Every outlet NaijaPulse tracks, with its ownership lean, confidence, and how much of the feed it contributes. Leans reflect ownership and editorial pattern — not a verdict on accuracy.</p>
+      </div>
+      <div class="sources-toolbar">
+        <div class="sort-toggle" id="sourceSortToggle">
+          <button class="active" data-ssort="volume">By volume</button>
+          <button data-ssort="alpha">A–Z</button>
+        </div>
+      </div>
+      <div class="sources-grid" id="sourcesGrid"></div>
+    </section>
+
+    <!-- ============ VIEW: BLINDSPOTS ============ -->
+    <section id="view-blindspots" hidden>
+      <div class="page-head">
+        <h1>Blindspots</h1>
+        <p>A story becomes a blindspot when political coverage is heavily lopsided pro- or anti-government — reported almost entirely from one side, with little to none from the other.</p>
+      </div>
+      <div class="demo-toggle-row">
+        <div class="switch" id="demoSwitch"></div>
+        <span style="font-size:13px;color:var(--text-dim);" id="demoSwitchLabel">Show example blindspots (demo data)</span>
+      </div>
+      <div id="blindspotBody"></div>
+    </section>
+
+    <!-- ============ VIEW: HEALTH ============ -->
+    <section id="view-health" hidden>
+      <div class="page-head">
+        <h1>Pipeline Health</h1>
+        <p>NaijaPulse is a snapshot, not a live stream — it reflects the last pipeline run. We show our own data quality openly, because trust here should be earned by disclosure, not assumed.</p>
+      </div>
+
+      <div class="health-grid">
+        <div class="stat-card"><div class="big mono">500</div><div class="lbl">Total articles ingested</div></div>
+        <div class="stat-card"><div class="big mono">498</div><div class="lbl">Canonical (deduplicated)</div></div>
+        <div class="stat-card"><div class="big mono">163</div><div class="lbl">Stories clustered</div></div>
+        <div class="stat-card"><div class="big mono" style="color:var(--lean-anti)">0</div><div class="lbl">Blindspots flagged today</div></div>
+      </div>
+
+      <div class="health-section">
+        <h3>RSS feed status</h3>
+        <div class="panel" style="padding:6px 20px;">
+          <div class="feed-status-row"><span class="lbl">Feeds tracked</span><span class="v">10</span></div>
+          <div class="feed-status-row"><span class="lbl">Feeds succeeding</span><span class="v" style="color:var(--accent-bright)">10 / 10 · 100%</span></div>
+          <div class="feed-status-row"><span class="lbl">Fell back to Google News</span><span class="v">4 feeds</span></div>
+          <div class="feed-status-row"><span class="lbl">Extraction success rate</span><span class="v">67.89%</span></div>
+        </div>
+      </div>
+
+      <div class="health-section">
+        <h3>Bias-coverage confidence buckets</h3>
+        <p style="font-size:12.5px;color:var(--text-faint);margin-bottom:2px;">Share of tagged articles behind each story's bias reading — 100% means every article's source lean is known.</p>
+        <div class="stacked-bar">
+          <span style="width:100%;background:var(--accent-dim);">100% coverage · 163 stories</span>
+        </div>
+        <div class="feed-status-row" style="border:none;padding-top:0;"><span class="lbl">Minimum-sample gate</span><span class="v">3 articles · 116 stories below threshold, shown but muted</span></div>
+        <div class="feed-status-row"><span class="lbl">Excluded by topic gate (non-political)</span><span class="v">88 stories</span></div>
+        <div class="feed-status-row"><span class="lbl">Eligible for blindspot detection</span><span class="v">30 stories · political &amp; ≥3 tagged</span></div>
+      </div>
+
+      <div class="health-section">
+        <h3>Methodology</h3>
+        <div class="accordion" id="accordion">
+          <div class="accordion-item">
+            <div class="accordion-head">How we cluster a Story <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></div>
+            <div class="accordion-body"><p>Articles are embedded with a local model, near-duplicates collapsed to one canonical article, then canonical articles about the same real-world event are clustered into a single Story. One Story = one event, across every outlet that covered it.</p></div>
+          </div>
+          <div class="accordion-item">
+            <div class="accordion-head">The four-lean taxonomy <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></div>
+            <div class="accordion-body"><p><b style="color:var(--lean-pro)">Pro-government</b>, <b style="color:var(--lean-anti)">anti-government</b>, <b style="color:#8AC7C0">mixed</b>, and <b style="color:#AEB9C6">independent</b> — a richer read on the Nigerian media landscape than a binary left/right split. Leans are set at the outlet level from ownership and editorial pattern, reviewed periodically, and shown as "unknown" rather than guessed when we don't have enough signal.</p></div>
+          </div>
+          <div class="accordion-item">
+            <div class="accordion-head">What counts as a blindspot <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></div>
+            <div class="accordion-body"><p>A political story with at least 3 tagged articles where coverage skews almost entirely to one side of the pro/anti-government axis. Today, 30 stories are eligible and 0 are flagged — that's an honest reading of the current news cycle, not a placeholder.</p></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="health-section">
+        <h3>Edge-case gallery <span style="font-size:11px;color:var(--text-faint);font-weight:400;">— every state below is designed, not accidental</span></h3>
+      </div>
+      <div class="edge-gallery">
+        <div class="edge-tile"><div class="k">Unknown lean</div><span class="lean-chip unk"><span class="dot" style="background:var(--lean-unk)"></span>Lean unknown</span></div>
+        <div class="edge-tile"><div class="k">Missing image</div><div class="thumb-fallback" style="width:100%;height:70px;border-radius:8px;background:var(--glass-border-soft);">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 15l5-5 4 4 3-3 6 6"/></svg>No image</div></div>
+        <div class="edge-tile"><div class="k">Low confidence</div><div class="confidence-chip"><span class="bar"><i style="width:18%;background:var(--gold)"></i></span> 18% tagged — low sample</div></div>
+        <div class="edge-tile"><div class="k">404 story</div><span style="font-size:12px;color:var(--text-dim);">"This story isn't here anymore →"</span></div>
+        <div class="edge-tile"><div class="k">Empty filter</div><span style="font-size:12px;color:var(--text-dim);">"No stories match — clear filters"</span></div>
+        <div class="edge-tile"><div class="k">Long title clamp</div><span style="font-size:12px;color:var(--text-dim);">Wraps to 3 lines, then truncates gracefully</span></div>
+      </div>
+
+      <div class="ad-slot rect" style="margin:8px 28px 40px; max-width:300px;" data-ad="health-rect">
+        <span class="tag">Advertisement</span><span>Google AdSense · 300×250</span>
+      </div>
+    </section>
+
+    <div class="footer-note">
+      <span>NaijaPulse · a coverage-transparency layer for Nigerian news · not fact-checking, not a newsroom</span>
+      <span>Snapshot as of Jul 14, 2026 · 06:02 WAT</span>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ================= DATA ================= */
+const SOURCES = [
+  {id:'punch', name:'Punch', url:'punchng.com', lean:'mixed', confidence:'high', vol:44, notes:'Broad ownership base; coverage swings by desk.'},
+  {id:'vanguard', name:'Vanguard', url:'vanguardngr.com', lean:'mixed', confidence:'high', vol:38, notes:null},
+  {id:'thecable', name:'TheCable', url:'thecable.ng', lean:'independent', confidence:'high', vol:31, notes:'Digital-native, no political ownership ties on record.'},
+  {id:'premiumtimes', name:'Premium Times', url:'premiumtimesng.com', lean:'independent', confidence:'high', vol:29, notes:'Investigative desk; funded partly by grants.'},
+  {id:'dailytrust', name:'Daily Trust', url:'dailytrust.com', lean:'mixed', confidence:'medium', vol:26, notes:null},
+  {id:'thisday', name:'ThisDay', url:'thisdaylive.com', lean:'pro_government', confidence:'medium', vol:24, notes:'Ownership has documented ties to political office holders.'},
+  {id:'channels', name:'Channels TV', url:'channelstv.com', lean:'mixed', confidence:'high', vol:22, notes:null},
+  {id:'leadership', name:'Leadership', url:'leadership.ng', lean:'pro_government', confidence:'low', vol:19, notes:'Lean inferred from editorial pattern, not confirmed ownership.'},
+  {id:'nation', name:'The Nation', url:'thenationonlineng.net', lean:'pro_government', confidence:'medium', vol:18, notes:null},
+  {id:'sahara', name:'Sahara Reporters', url:'saharareporters.com', lean:'anti_government', confidence:'high', vol:16, notes:'Diaspora-run; consistently oppositional editorial stance.'},
+  {id:'businessday', name:'BusinessDay', url:'businessday.ng', lean:'independent', confidence:'medium', vol:14, notes:null},
+  {id:'tribune', name:'Nigerian Tribune', url:'tribuneonlineng.com', lean:null, confidence:null, vol:9, notes:null},
+];
+
+const TOPICS = {politics:'Politics', security:'Security', economy:'Economy', elections:'Elections 2027', naira:'Naira & Markets', floods:'Floods & Climate', sports:'Sports', entertainment:'Entertainment'};
+
+const STORIES = [
+  {id:'s1', title:'After Oyo Schoolchildren, Teachers Regain Freedom, ADC Demands Rescue of Borno, Kwara Kidnap Victims', topic:'security', count:27, dist:{mixed:19,independent:6,pro_government:2,anti_government:0}, blindspot:false, political:true, coverage:100, updated:'2h ago', img:true, icon:'📍'},
+  {id:'s2', title:'CBN Holds Benchmark Rate at 27.5% as Naira Steadies Against Dollar', topic:'naira', count:34, dist:{mixed:14,independent:9,pro_government:8,anti_government:3}, blindspot:false, political:true, coverage:100, updated:'40m ago', img:true, icon:'💱'},
+  {id:'s3', title:'FG Commissions Second Niger Bridge Rehabilitation, Opposition Questions Contract Cost', topic:'politics', count:21, dist:{mixed:5,independent:2,pro_government:13,anti_government:1}, blindspot:false, political:true, coverage:95.2, updated:'3h ago', img:true, icon:'🏗️'},
+  {id:'s4', title:'Lagos Flood Displaces 3,000 Residents in Ikorodu as Rains Intensify', topic:'floods', count:16, dist:{mixed:9,independent:5,pro_government:1,anti_government:1}, blindspot:false, political:false, coverage:100, updated:'5h ago', img:true, icon:'🌊'},
+  {id:'s5', title:'Super Eagles Name Provisional Squad for 2027 AFCON Qualifiers', topic:'sports', count:12, dist:{mixed:7,independent:3,pro_government:1,anti_government:1}, blindspot:false, political:false, coverage:100, updated:'1h ago', img:true, icon:'⚽'},
+  {id:'s6', title:'INEC Unveils New Voter Register Ahead of 2027 Elections, Civil Society Flags Gaps', topic:'elections', count:9, dist:{mixed:2,independent:1,pro_government:6,anti_government:0}, blindspot:false, political:true, coverage:100, updated:'6h ago', img:false, icon:'🗳️'},
+  {id:'s7', title:'Senate Passes Tax Reform Bill Amid Walkout by Minority Caucus', topic:'politics', count:24, dist:{mixed:8,independent:2,pro_government:13,anti_government:1}, blindspot:false, political:true, coverage:100, updated:'2h ago', img:true, icon:'🏛️'},
+  {id:'s8', title:'Fuel Scarcity Bites in Port Harcourt as Marketers Blame Depot Logistics', topic:'economy', count:18, dist:{mixed:11,independent:4,pro_government:2,anti_government:1}, blindspot:false, political:false, coverage:100, updated:'8h ago', img:true, icon:'⛽'},
+  {id:'s9', title:'Governor Commissions Potato Value Chain Project, Eyes Agro-Industrial Transformation for the North-Central Region and Beyond', topic:'economy', count:3, dist:{mixed:0,independent:0,pro_government:3,anti_government:0}, blindspot:false, political:true, coverage:33.3, updated:'11h ago', img:false, icon:'🥔'},
+  {id:'s10', title:'Afrobeats Star Announces Continental Tour, Ticket Sales Crash Vendor Site', topic:'entertainment', count:14, dist:{mixed:9,independent:4,pro_government:0,anti_government:1}, blindspot:false, political:false, coverage:100, updated:'20m ago', img:true, icon:'🎤'},
+  {id:'s11', title:'EFCC Arraigns Former Commissioner Over Alleged N2.3bn Contract Fraud', topic:'politics', count:8, dist:{mixed:1,independent:0,pro_government:1,anti_government:6}, blindspot:false, political:true, coverage:100, updated:'4h ago', img:true, icon:'⚖️'},
+  {id:'s12', title:'Customs Reports Record N1.7tn Revenue in H1, Cites Digitised Clearance', topic:'economy', count:11, dist:{mixed:2,independent:1,pro_government:8,anti_government:0}, blindspot:false, political:true, coverage:100, updated:'9h ago', img:true, icon:'📦'},
+];
+
+const DEMO_BLINDSPOTS = {
+  pro:[
+    {title:'Presidency Denies Rift Within Cabinet Over Subsidy Rollout', src:'8 sources', pro:82,mixed:12,anti:0,indep:6},
+    {title:'FG Says Debt Servicing Ratio "Well Within Sustainable Limits"', src:'6 sources', pro:74,mixed:18,anti:0,indep:8},
+  ],
+  anti:[
+    {title:'Coalition Accuses Electoral Body of Bias in Ward Delimitation', src:'7 sources', anti:79,mixed:14,pro:0,indep:7},
+    {title:'Civil Society Alleges Selective Enforcement in Anti-Corruption Sweep', src:'5 sources', anti:71,mixed:20,pro:0,indep:9},
+  ]
+};
+
+const LEAN_META = {
+  pro_government:{label:'Pro-government', cls:'pro', color:'var(--lean-pro)'},
+  anti_government:{label:'Anti-government', cls:'anti', color:'var(--lean-anti)'},
+  mixed:{label:'Mixed', cls:'mixed', color:'var(--lean-mixed)'},
+  independent:{label:'Independent', cls:'indep', color:'var(--lean-indep)'},
+};
+
+/* ================= HELPERS ================= */
+function ribbonHTML(dist){
+  const total = Object.values(dist).reduce((a,b)=>a+b,0) || 1;
+  const order=['pro_government','anti_government','mixed','independent'];
+  return `<div class="ribbon">${order.map(k=>{
+    const pct = (dist[k]||0)/total*100;
+    return pct>0 ? `<span class="${LEAN_META[k].cls}" style="width:${pct}%"></span>` : '';
+  }).join('')}</div>`;
+}
+function confidenceChip(pct){
+  const low = pct < 50;
+  return `<span class="confidence-chip"><span class="bar"><i style="width:${pct}%;background:${low?'var(--gold)':'var(--accent-bright)'}"></i></span>${pct.toFixed(0)}% tagged${low?' · low sample':''}</span>`;
+}
+function thumbHTML(story, small){
+  if(!story.img){
+    const h = small? '132px':'132px';
+    return `<div class="thumb-fallback" style="height:${h}">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 15l5-5 4 4 3-3 6 6"/></svg>
+      No image on file</div>`;
+  }
+  const hue = Math.abs(story.title.split('').reduce((a,c)=>a+c.charCodeAt(0),0)) % 360;
+  return `<div class="photo-gradient" data-icon="${story.icon}" style="background:linear-gradient(140deg, hsl(${hue} 40% 18%), hsl(${(hue+40)%360} 35% 10%))"></div>`;
+}
+function timeConfidence(story){ return story.coverage; }
+
+/* ================= RENDER: RAIL ================= */
+function renderRail(){
+  const track = document.getElementById('railTrack');
+  const top = [...STORIES].sort((a,b)=>b.count-a.count).slice(0,7);
+  track.innerHTML = top.map((s,i)=>`
+    <div class="rail-card" style="animation-delay:${i*0.09}s">
+      <div class="thumb">${thumbHTML(s)}</div>
+      <div class="body">
+        <div class="badge-row">
+          ${s.political ? '<span class="badge badge-political">Political</span>':''}
+          <span class="badge-conv">${s.count} outlets</span>
+        </div>
+        <h3>${s.title}</h3>
+        ${ribbonHTML(s.dist)}
+        ${confidenceChip(s.coverage)}
+      </div>
+    </div>`).join('');
+  track.querySelectorAll('.rail-card').forEach((el,i)=>{
+    el.addEventListener('click', ()=>openStory(top[i].id));
+  });
+}
+
+/* ================= RENDER: FEED ================= */
+let state = { sort:'recent', minOutlets:1, politicalOnly:false, hideLowConf:false, topic:'all' };
+
+function getFilteredStories(){
+  let list = STORIES.filter(s => s.count >= state.minOutlets);
+  if(state.politicalOnly) list = list.filter(s=>s.political);
+  if(state.hideLowConf) list = list.filter(s=>s.coverage >= 50);
+  if(state.topic !== 'all') list = list.filter(s=>s.topic===state.topic);
+  list = [...list].sort((a,b)=> state.sort==='covered' ? b.count-a.count : STORIES.indexOf(a)-STORIES.indexOf(b));
+  return list;
+}
+
+function renderFeed(){
+  const track = document.getElementById('feedTrack');
+  const list = getFilteredStories();
+  if(list.length===0){
+    track.innerHTML = `
+      <div class="empty-state" style="margin-top:20px;">
+        <div class="empty-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div>
+        <h3>No stories match these filters</h3>
+        <p>Try lowering the minimum outlet count, or turn off "Political only."</p>
+        <button class="btn-ghost" id="clearFiltersBtn">Clear filters</button>
+      </div>`;
+    document.getElementById('clearFiltersBtn').addEventListener('click', clearFilters);
+    return;
+  }
+  let html = '';
+  list.forEach((s,i)=>{
+    html += storyCardHTML(s, i);
+    if((i+1)%4===0 && i!==list.length-1){
+      html += `<div class="ad-slot rect" data-ad="feed-${i}"><span class="tag">Advertisement</span><span>Google AdSense · native in-feed</span></div>`;
+    }
+  });
+  track.innerHTML = html;
+  track.querySelectorAll('.story-card').forEach(el=>{
+    el.addEventListener('click', ()=> openStory(el.dataset.id));
+  });
+}
+
+function storyCardHTML(s, i){
+  return `
+  <article class="story-card" data-id="${s.id}" style="animation-delay:${Math.min(i,8)*0.05}s">
+    <div class="thumb">${thumbHTML(s)}</div>
+    <div class="content">
+      <div class="badge-row">
+        ${s.blindspot ? `<span class="badge badge-blindspot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9L2.5 17a2 2 0 001.7 3h15.6a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>Blindspot</span>` : ''}
+        ${s.political ? '<span class="badge badge-political">Political</span>' : `<span class="badge-conv">${TOPICS[s.topic]||'General'}</span>`}
+        <span class="badge-conv">${s.updated}</span>
+      </div>
+      <h3>${s.title}</h3>
+      ${ribbonHTML(s.dist)}
+      <div class="meta-row">
+        <span class="mono">${s.count} outlets reported this</span>
+        ${confidenceChip(s.coverage)}
+      </div>
+    </div>
+  </article>`;
+}
+
+function clearFilters(){
+  state = {...state, minOutlets:1, politicalOnly:false, hideLowConf:false, topic:'all'};
+  document.getElementById('minOutlets').value=1;
+  document.getElementById('minOutletsVal').textContent=1;
+  document.getElementById('politicalOnly').checked=false;
+  document.getElementById('hideLowConf').checked=false;
+  document.querySelectorAll('.pill').forEach(p=>p.classList.toggle('active', p.dataset.topic==='all'));
+  renderFeed();
+}
+
+/* ================= STORY DETAIL ================= */
+function donutSVG(dist){
+  const order=['pro_government','anti_government','mixed','independent'];
+  const total = Object.values(dist).reduce((a,b)=>a+b,0) || 1;
+  const R=54, C=2*Math.PI*R;
+  let acc=0;
+  const circles = order.map(k=>{
+    const pct=(dist[k]||0)/total;
+    const dash = pct*C;
+    const el = pct>0 ? `<circle cx="70" cy="70" r="${R}" fill="none" stroke="${LEAN_META[k].color}" stroke-width="16" stroke-dasharray="${dash} ${C-dash}" stroke-dashoffset="${-acc}" stroke-linecap="butt" class="donut-seg"/>` : '';
+    acc += dash;
+    return el;
+  }).join('');
+  return `<svg width="140" height="140" viewBox="0 0 140 140" style="transform:rotate(-90deg)">
+    <circle cx="70" cy="70" r="${R}" fill="none" stroke="var(--glass-border-soft)" stroke-width="16"/>
+    ${circles}
+  </svg>`;
+}
+
+function openStory(id){
+  const s = STORIES.find(x=>x.id===id);
+  document.getElementById('view-stories').hidden = true;
+  document.getElementById('view-story-detail').hidden = false;
+  document.querySelectorAll('.topic-bar, .rail-section').forEach(()=>{});
+  document.getElementById('topicBar').style.display='none';
+
+  const total = Object.values(s.dist).reduce((a,b)=>a+b,0);
+  const legend = ['pro_government','anti_government','mixed','independent'].map(k=>`
+    <div class="legend-row"><span class="dot" style="background:${LEAN_META[k].color}"></span>
+      <span class="lbl">${LEAN_META[k].label}</span><span class="val">${s.dist[k]||0}</span></div>`).join('');
+
+  const members = SOURCES.slice(0, Math.min(s.count, 6)).map((src,i)=>`
+    <div class="member">
+      <div class="member-avatar">${src.name.slice(0,2).toUpperCase()}</div>
+      <div class="member-body">
+        <div class="src-row"><span class="src-name">${src.name}</span>${leanChip(src.lean)}</div>
+        <h5>${s.title.slice(0, 70)}${i%3===0?'…':''}</h5>
+        <div class="sub"><span>${['2h','40m','3h','5h','20m','9h'][i%6]} ago</span>${i>0?`<span class="mono">Also reported by ${Math.max(0,s.count-1-i)} more</span>`:''}</div>
+      </div>
+      <div class="member-link" title="Opens ${src.name} in a new tab (link-out only, no in-app reader)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17L17 7M7 7h10v10"/></svg>
+      </div>
+    </div>`).join('');
+
+  document.getElementById('detailGrid').innerHTML = `
+    <div>
+      <div class="badge-row" style="margin-bottom:6px;">
+        ${s.political ? '<span class="badge badge-political">Political story</span>':'<span class="badge-conv">Non-political — bias emphasis suppressed</span>'}
+        <span class="badge-conv">Last updated ${s.updated}</span>
+      </div>
+      <h1 class="detail-title">${s.title}</h1>
+
+      ${s.blindspot ? `
+      <div class="blindspot-banner">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9L2.5 17a2 2 0 001.7 3h15.6a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
+        <div><h4>Blindspot detected</h4><p>Coverage is heavily lopsided on this political story — almost entirely from one side of the pro/anti-government axis.</p></div>
+      </div>` : ''}
+
+      <div class="panel">
+        <h4>Bias distribution <span class="mono" style="color:var(--text-faint);font-weight:400;">${total} tagged</span></h4>
+        <div class="donut-wrap">
+          ${donutSVG(s.dist)}
+          <div class="donut-legend">${legend}</div>
+        </div>
+        <div class="coverage-meter">
+          <div class="note">Coverage confidence — based on ${total} of ${s.count} articles</div>
+          <div class="track"><div class="fill" style="width:${s.coverage}%"></div></div>
+          <div class="note">${s.coverage<50 ? 'Thin sample — treat this reading as directional, not definitive.' : s.coverage.toFixed(0)+'% of members have a known source lean.'}</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h4>Reported by ${s.count} outlets</h4>
+        <div class="member-list">${members}${s.count>6?`<div style="padding:12px 4px 0;font-size:12px;color:var(--text-faint);">+ ${s.count-6} more outlets not shown in this preview</div>`:''}</div>
+      </div>
+    </div>
+
+    <aside>
+      <div class="panel">
+        <h4>Similar topics</h4>
+        <div class="similar-tags">
+          <a>${TOPICS[s.topic]||'General'}</a><a>Nigeria</a><a>Governance</a><a>${s.political?'Political':'Human interest'}</a>
+        </div>
+      </div>
+      <div class="ad-slot skyscraper" data-ad="detail-sky">
+        <span class="tag">Advertisement</span><span>Google AdSense · 160×600</span>
+      </div>
+    </aside>
+  `;
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function leanChip(lean){
+  if(!lean) return `<span class="lean-chip unk"><span class="dot" style="background:var(--lean-unk)"></span>Lean unknown</span>`;
+  const m = LEAN_META[lean];
+  return `<span class="lean-chip ${m.cls}"><span class="dot" style="background:${m.color}"></span>${m.label}</span>`;
+}
+
+document.getElementById('backToFeed').addEventListener('click', ()=>{
+  document.getElementById('view-story-detail').hidden = true;
+  document.getElementById('view-stories').hidden = false;
+  document.getElementById('topicBar').style.display='flex';
+});
+
+/* ================= SOURCES ================= */
+function renderSources(sortMode){
+  let list = [...SOURCES];
+  list.sort((a,b)=> sortMode==='alpha' ? a.name.localeCompare(b.name) : b.vol - a.vol);
+  document.getElementById('sourcesGrid').innerHTML = list.map((src,i)=>{
+    const hue = Math.abs(src.name.split('').reduce((a,c)=>a+c.charCodeAt(0),0))%360;
+    return `
+    <div class="source-card" style="animation-delay:${i*0.04}s">
+      <div class="top">
+        <div class="source-avatar" style="background:hsl(${hue} 30% 16%); color:hsl(${hue} 50% 70%)">${src.name.slice(0,1)}</div>
+        <div><h4>${src.name}</h4><div class="url">${src.url}</div></div>
+      </div>
+      ${leanChip(src.lean)}
+      ${src.notes ? `<div class="source-note">"${src.notes}"</div>` : (src.lean? '' : `<div class="source-note">No ownership signal on file yet — shown honestly rather than guessed.</div>`)}
+      <div class="source-stats">
+        <span class="vol mono">${src.vol} articles</span>
+        <span class="confidence-label">${src.confidence ? src.confidence+' confidence' : 'unrated'}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ================= BLINDSPOTS ================= */
+function renderBlindspots(showDemo){
+  const el = document.getElementById('blindspotBody');
+  if(!showDemo){
+    el.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg></div>
+        <h3>No blindspots detected yet</h3>
+        <p>30 political stories currently meet the sample threshold for blindspot detection, and none are lopsided enough to flag right now. That's a real reading of today's cycle — not a placeholder. Check back as the feed updates, or preview what a blindspot looks like with example data.</p>
+      </div>`;
+    return;
+  }
+  function col(items, side){
+    return items.map(it=>{
+      const rows = side==='pro'
+        ? [['Pro-gov', it.pro, 'var(--lean-pro)'],['Mixed', it.mixed, 'var(--lean-mixed)'],['Anti-gov', it.anti, 'var(--lean-anti)'],['Indep.', it.indep, 'var(--lean-indep)']]
+        : [['Anti-gov', it.anti, 'var(--lean-anti)'],['Mixed', it.mixed, 'var(--lean-mixed)'],['Pro-gov', it.pro, 'var(--lean-pro)'],['Indep.', it.indep, 'var(--lean-indep)']];
+      return `<div class="bs-card">
+        <span class="badge-blindspot badge"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01M10.3 3.9L2.5 17a2 2 0 001.7 3h15.6a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>${it.src}</span>
+        <h4>${it.title}</h4>
+        <div class="bs-breakdown">${rows.map(r=>`<div class="bs-row"><span>${r[0]}</span><span class="track"><i style="width:${r[1]}%;background:${r[2]}"></i></span><span class="mono">${r[1]}%</span></div>`).join('')}</div>
+      </div>`;
+    }).join('');
+  }
+  el.innerHTML = `<div class="blindspot-cols">
+    <div class="blindspot-col"><h3>For the pro-government side</h3><div class="sub">Stories with little to no anti-government coverage</div>${col(DEMO_BLINDSPOTS.pro,'pro')}</div>
+    <div class="blindspot-col"><h3>For the anti-government side</h3><div class="sub">Stories with little to no pro-government coverage</div>${col(DEMO_BLINDSPOTS.anti,'anti')}</div>
+  </div>`;
+}
+
+/* ================= NAV / VIEW SWITCH ================= */
+const views = ['stories','story-detail','sources','blindspots','health'];
+function showView(name){
+  views.forEach(v=>{
+    const el = document.getElementById('view-'+v);
+    if(el) el.hidden = (v!==name && !(name==='stories' && v==='story-detail'));
+  });
+  document.getElementById('view-story-detail').hidden = true;
+  document.getElementById('view-'+name).hidden = false;
+  document.getElementById('topicBar').style.display = (name==='stories') ? 'flex' : 'none';
+  document.querySelectorAll('.nav-item').forEach(n=> n.classList.toggle('active', n.dataset.view===name));
+  window.scrollTo({top:0, behavior:'smooth'});
+  if(name==='sources') renderSources('volume');
+  if(name==='blindspots') renderBlindspots(false);
+}
+document.querySelectorAll('.nav-item').forEach(n=> n.addEventListener('click', ()=> showView(n.dataset.view)));
+
+/* ================= CONTROLS ================= */
+document.getElementById('sortToggle').addEventListener('click', e=>{
+  const btn = e.target.closest('button'); if(!btn) return;
+  document.querySelectorAll('#sortToggle button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); state.sort = btn.dataset.sort; renderFeed();
+});
+document.getElementById('minOutlets').addEventListener('input', e=>{
+  state.minOutlets = +e.target.value;
+  document.getElementById('minOutletsVal').textContent = e.target.value;
+  renderFeed();
+});
+document.getElementById('politicalOnly').addEventListener('change', e=>{ state.politicalOnly = e.target.checked; renderFeed(); });
+document.getElementById('hideLowConf').addEventListener('change', e=>{ state.hideLowConf = e.target.checked; renderFeed(); });
+document.getElementById('topicBar').addEventListener('click', e=>{
+  const btn = e.target.closest('.pill'); if(!btn) return;
+  document.querySelectorAll('.pill').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active'); state.topic = btn.dataset.topic; renderFeed();
+});
+document.getElementById('sourceSortToggle').addEventListener('click', e=>{
+  const btn = e.target.closest('button'); if(!btn) return;
+  document.querySelectorAll('#sourceSortToggle button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); renderSources(btn.dataset.ssort);
+});
+document.getElementById('demoSwitch').addEventListener('click', function(){
+  this.classList.toggle('on');
+  const on = this.classList.contains('on');
+  document.getElementById('demoSwitchLabel').textContent = on ? 'Showing example blindspots (demo data)' : 'Show example blindspots (demo data)';
+  renderBlindspots(on);
+});
+document.getElementById('accordion').addEventListener('click', e=>{
+  const head = e.target.closest('.accordion-head'); if(!head) return;
+  head.parentElement.classList.toggle('open');
+});
+
+/* Sidebar collapse + mobile */
+document.getElementById('collapseBtn').addEventListener('click', ()=>{
+  document.getElementById('sidebar').classList.toggle('collapsed');
+});
+document.getElementById('hamburger').addEventListener('click', ()=>{
+  document.getElementById('sidebar').classList.toggle('mobile-open');
+});
+document.getElementById('themeToggle').addEventListener('click', ()=>{
+  const html = document.documentElement;
+  html.setAttribute('data-theme', html.getAttribute('data-theme')==='dark' ? 'light':'dark');
+});
+
+/* ================= INIT ================= */
+renderRail();
+renderFeed();
+</script>
+</body>
+</html>
