@@ -38,6 +38,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg>
       <span class="lbl">Pipeline Health</span>
     </button>
+    <button class="menu-btn" data-view="blindspot">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 9v4M12 17h.01M10.3 3.9L2.5 17a2 2 0 001.7 3h15.6a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
+      <span class="lbl">Blindspots</span><span class="count" data-count="blindspot">0</span>
+    </button>
   </nav>
 
   <div class="search-box">
@@ -72,12 +76,19 @@
 
       <div class="rail-card-panel" id="snapTrack"></div>
 
+      <div class="rail-card-panel" id="blindspotCard"></div>
+
       <div class="rail-card-panel">
         <h4>Browse by topic</h4>
         <div id="topicCards"></div>
       </div>
 
       <div class="rail-card-panel" id="timelineTrack"></div>
+
+      <div class="rail-card-panel" id="biasTimeCard"></div>
+
+      <div class="rail-card-panel" id="sourceConcCard"></div>
+      <div class="rail-card-panel" id="confCard"></div>
     </div>
   </aside>
 
@@ -117,6 +128,8 @@
           <span class="slider-val mono" id="minOutletsVal">1</span>
         </div>
         <label class="check-pill"><input type="checkbox" id="politicalOnly"> Political only</label>
+        <label class="check-pill"><input type="checkbox" id="blindspotOnly"> Blindspots only</label>
+        <label class="check-pill"><input type="checkbox" id="savedOnly"> Saved</label>
         <label class="check-pill"><input type="checkbox" id="hideLowConf"> Hide low-confidence</label>
       </div>
 
@@ -127,7 +140,7 @@
     <!-- ===== VIEW: STORY DETAIL ===== -->
     <section id="view-story-detail" hidden>
       <a class="back-link" id="backToFeed">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 6l-6 6 6 6"/></svg> Back to Stories
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 6l-6 6 6 6"/></path></svg> Back to Stories
       </a>
 
       <!-- big photo + summary -->
@@ -137,11 +150,19 @@
       </div>
       <div class="story-summary" id="storySummary"></div>
 
-      <!-- 3-zone body -->
-      <div class="story-body">
-        <aside class="story-left" id="storyLeft"></aside>
-        <div class="story-center" id="storyCenter"></div>
-        <aside class="story-right" id="storyRight"></aside>
+      <!-- article list (prominent center) -->
+      <div class="story-articles" id="storyArticles"></div>
+
+      <!-- related / meanwhile strip -->
+      <div class="related-strip" id="relatedStrip"></div>
+
+      <!-- trending carousel for story context (keeps readers in the flow) -->
+      <div class="carousel-section story-carousel" style="margin-top:24px;">
+        <div class="rail-head">
+          <h2>Trending now</h2>
+          <span class="sub">Keep reading — other big stories</span>
+        </div>
+        <div id="storyCarouselTrack"></div>
       </div>
     </section>
 
@@ -169,6 +190,8 @@
         </div>
       </div>
 
+      <div class="panel view-card" id="leaderboardCard"></div>
+
       <div class="sources-grid" id="sourcesGrid"></div>
     </section>
 
@@ -194,6 +217,20 @@
       </div>
     </section>
 
+    <!-- ===== VIEW: BLINDSPOTS ===== -->
+    <section id="view-blindspot" hidden>
+      <div class="page-head">
+        <h1>Blindspots</h1>
+        <p>A blindspot is a political story where coverage is heavily lopsided — almost entirely from one side of the pro/anti-government axis. NaijaPulse flags these so you can see which events the Nigerian press is covering one‑sidedly, and where a missing perspective leaves the public under‑informed.</p>
+      </div>
+      <div class="panel" id="blindspotExplainer"></div>
+
+      <div class="panel view-card" id="echoCard"></div>
+
+      <div class="feed" id="blindspotFeed"></div>
+      <div class="pagination-ctl" id="blindspotPager"></div>
+    </section>
+
     <!-- ===== GLOBAL FOOTER ===== -->
     <footer class="site-footer" id="siteFooter"></footer>
 
@@ -203,6 +240,9 @@
   <aside class="right-rail" id="rightRail">
     <div class="rail-inner">
       <div class="rail-card-panel" id="biasSpectrumTrack"></div>
+      <div class="rail-card-panel" id="heatmapCard"></div>
+      <div class="rail-card-panel" id="oneSidedCard"></div>
+      <div class="rail-card-panel" id="momentumCard"></div>
       <div class="rail-card-panel methodology-panel">
         <h4>How to read this</h4>
         <p>Bias tags reflect <b>ownership lean</b>, not fact-checking. The spectrum shows how today's coverage splits across pro-government, anti-government, mixed, and independent outlets.</p>

@@ -1,0 +1,16 @@
+{
+  "id":"s1",
+  "representative_title":"CBN Holds Benchmark Rate at 27.5% as Naira Steadies Against Dollar",
+  "article_count":34,
+  "bias_distribution":{"mixed":14,"independent":9,"pro_government":8,"anti_government":3},
+  "is_blindspot":false,
+  "is_political_topic":true,
+  "bias_coverage_pct":100,
+  "first_seen_at":"2026-07-14T08:00:00+00:00",
+  "last_updated_at":"2026-07-14T19:55:00+00:00",
+  "members":[
+    {"title":"CBN holds rate","summary":"The Central Bank kept its benchmark rate unchanged at 27.5%.","url":"https://ex.com/a","image_url":null,"source_name":"TheCable","published_at":"2026-07-14T10:00:00+00:00","also_reported_by":5},
+    {"title":"Naira steadies","summary":"The naira held firm against the dollar after the decision.","url":"https://ex.com/b","image_url":"https://ex.com/x.png","source_name":"Punch","published_at":"2026-07-14T11:00:00+00:00","also_reported_by":2},
+    {"title":"Markets react","summary":"Investors welcomed the decision across trading desks.","url":"https://ex.com/c","image_url":null,"source_name":"Vanguard","published_at":"2026-07-14T12:00:00+00:00","also_reported_by":0}
+  ]
+}

@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NaijaPulse — Story (Ground News style · design preview)</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          canvas: "#F6F7F9",
+          surface: "#FFFFFF",
+          ink: "#0F172A",
+          muted: "#64748B",
+          line: "#E5E7EB",
+          lean: {
+            left: "#2563EB",
+            center: "#64748B",
+            right: "#DC2626",
+            ai: "#7C3AED",
+          },
+        },
+        fontFamily: {
+          sans: ["Inter", "system-ui", "sans-serif"],
+          mono: ['"IBM Plex Mono"', "ui-monospace", "monospace"],
+        },
+        boxShadow: {
+          card: "0 1px 2px rgba(15,23,42,.04), 0 10px 30px -16px rgba(15,23,42,.18)",
+          pop: "0 8px 28px -8px rgba(15,23,42,.22)",
+        },
+        borderRadius: { xl2: "1.25rem" },
+      },
+    },
+  };
+</script>
+
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<style>
+  html { -webkit-font-smoothing: antialiased; }
+  body { background: #F6F7F9; }
+  /* smooth spectrum grow + card entrance */
+  .seg { transition: width .8s cubic-bezier(.22,1,.36,1); }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  .rise { animation: rise .5s ease both; }
+  @media (prefers-reduced-motion: reduce) {
+    .seg { transition: none; }
+    .rise { animation: none; }
+  }
+  ::selection { background: #C7D2FE; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useMemo } = React;
+
+/* ============================================================
+   SAMPLE DATA — design preview only.
+   In production this comes from GET /stories/{id} (see UI_UX_SPEC §4).
+   ============================================================ */
+const STORY = {
+  id: "s1",
+  representative_title: "CBN Holds Benchmark Rate at 27.5% as Naira Steadies Against Dollar",
+  tags: ["Economy", "Politics", "Markets"],
+  published_at: "2026-07-14T08:00:00+00:00",
+  last_updated_at: "2026-07-14T19:55:00+00:00",
+  ai_summary:
+    "The Central Bank of Nigeria left its benchmark monetary policy rate unchanged at 27.5%, the fourth consecutive hold, as inflation cools and the naira firms against the dollar. Coverage splits sharply: left-leaning outlets frame the decision as a needed anchor for borrowers, while right-leaning titles argue the hold misses a chance to spur growth. Center outlets focus on market calm and the signalling of patience. No outlet disputes the rate itself — the divide is over what the hold means for the wider economy.",
+  // Ground News style Left / Center / Right taxonomy (test mapping of the
+  // product's pro/anti/mixed/independent leans).
+  bias_distribution: { left: 36, center: 32, right: 55 },
+  members: [
+    {
+      source_name: "Premium Times", lean: "left", factuality: "High", ownership: "Independent",
+      title: "CBN retains 27.5% rate amid easing inflation pressure",
+      summary: "Members of the Monetary Policy Committee voted unanimously to hold, citing a steady decline in headline inflation and a more stable exchange rate.",
+      url: "https://example.com/premiumtimes-cbn", published_at: "2026-07-14T09:10:00+00:00",
+    },
+    {
+      source_name: "TheCable", lean: "left", factuality: "High", ownership: "Independent",
+      title: "MPC votes to hold as naira firms against the dollar",
+      summary: "The apex bank signalled patience, saying premature cuts could undo recent gains in price stability.",
+      url: "https://example.com/thecable-mpc", published_at: "2026-07-14T09:42:00+00:00",
+    },
+    {
+      source_name: "Sahara Reporters", lean: "left", factuality: "Medium", ownership: "Independent",
+      title: "Rate hold brings 'relief' for borrowers, critics warn of slow growth",
+      summary: "Civil society economists welcomed the pause but pressed the bank to explain its growth strategy.",
+      url: "https://example.com/sahara-rate", published_at: "2026-07-14T10:05:00+00:00",
+    },
+    {
+      source_name: "Vanguard", lean: "center", factuality: "High", ownership: "Independent",
+      title: "Naira steadies against dollar after CBN decision",
+      summary: "The local currency held firm in official and parallel markets, with traders citing improved forex liquidity.",
+      url: "https://example.com/vanguard-naira", published_at: "2026-07-14T11:00:00+00:00",
+    },
+    {
+      source_name: "Daily Trust", lean: "center", factuality: "High", ownership: "Independent",
+      title: "Markets calm as benchmark interest rate left unchanged",
+      summary: "Equity and bond markets reacted with little movement, analysts said the outcome was widely expected.",
+      url: "https://example.com/dailytrust-markets", published_at: "2026-07-14T11:48:00+00:00",
+    },
+    {
+      source_name: "Channels TV", lean: "center", factuality: "High", ownership: "Independent",
+      title: "CBN keeps rate at 27.5%, signals patience on cuts",
+      summary: "The governor told reporters the committee would watch the data before considering any easing.",
+      url: "https://example.com/channels-cbn", published_at: "2026-07-14T12:30:00+00:00",
+    },
+    {
+      source_name: "Punch", lean: "right", factuality: "High", ownership: "Independent",
+      title: "Holding rate 'missed chance' to spur growth — analysts",
+      summary: "Some economists argued a modest cut would have lifted output without reigniting inflation.",
+      url: "https://example.com/punch-growth", published_at: "2026-07-14T13:15:00+00:00",
+    },
+    {
+      source_name: "The Nation", lean: "right", factuality: "Medium", ownership: "Independent",
+      title: "Stability wins: CBN holds line on interest rates",
+      summary: "The paper backed the decision as a vote for predictability ahead of the budget cycle.",
+      url: "https://example.com/thenation-stability", published_at: "2026-07-14T14:02:00+00:00",
+    },
+  ],
+};
+
+const LEAN_META = {
+  left:   { label: "Lean Left",  color: "#2563EB", ring: "ring-blue-500/30",  text: "text-blue-700",  bg: "bg-blue-50",   dot: "bg-blue-600" },
+  center: { label: "Center",     color: "#64748B", ring: "ring-slate-400/30", text: "text-slate-700", bg: "bg-slate-100",  dot: "bg-slate-500" },
+  right:  { label: "Lean Right", color: "#DC2626", ring: "ring-red-500/30",   text: "text-red-700",   bg: "bg-red-50",    dot: "bg-red-600" },
+};
+
+/* ---------- helpers ---------- */
+function timeAgo(iso) {
+  const then = new Date(iso).getTime();
+  const now = Date.now();
+  let s = Math.max(0, Math.floor((now - then) / 1000));
+  if (s < 60) return `${s}s ago`;
+  const m = Math.floor(s / 60); if (m < 60) return `${m} min${m > 1 ? "s" : ""} ago`;
+  const h = Math.floor(m / 60); if (h < 24) return `${h} hour${h > 1 ? "s" : ""} ago`;
+  const d = Math.floor(h / 24); return `${d} day${d > 1 ? "s" : ""} ago`;
+}
+function fmtTime(iso) {
+  return new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+}
+
+/* ---------- small pieces ---------- */
+function TagPill({ children }) {
+  return (
+    <span className="inline-flex items-center rounded-full bg-white px-3 py-1 text-xs font-semibold tracking-wide text-ink ring-1 ring-line shadow-sm">
+      {children}
+    </span>
+  );
+}
+
+function LeanBadge({ lean }) {
+  const m = LEAN_META[lean];
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${m.bg} ${m.text} ring-1 ring-black/5`}>
+      <span className={`h-1.5 w-1.5 rounded-full ${m.dot}`}></span>
+      {m.label}
+    </span>
+  );
+}
+
+function MetaBadge({ label, value }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-md bg-canvas px-2 py-0.5 text-[11px] text-muted ring-1 ring-line">
+      <span className="font-medium text-slate-500">{label}:</span>
+      <span className="font-semibold text-ink">{value}</span>
+    </span>
+  );
+}
+
+function ReadButton({ url }) {
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer"
+       className="group/btn inline-flex items-center gap-1.5 rounded-lg bg-ink px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-ink/40 focus-visible:ring-offset-2">
+      Read Full Article
+      <svg className="transition-transform group-hover/btn:translate-x-0.5" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M7 17L17 7M17 7H8M17 7v9"/></svg>
+    </a>
+  );
+}
+
+/* ---------- AI summary card ---------- */
+function AISummaryCard({ summary }) {
+  return (
+    <div className="rise flex h-full flex-col rounded-xl2 bg-surface p-6 shadow-card ring-1 ring-line">
+      <div className="mb-4 flex items-center gap-2">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-purple-50 px-3 py-1 text-xs font-semibold text-lean-ai ring-1 ring-purple-200">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.6 4.4L18 8l-4.4 1.6L12 14l-1.6-4.4L6 8l4.4-1.6L12 2zM5 15l.9 2.4L8 18l-2.1.6L5 21l-.9-2.4L2 18l2.1-.6L5 15zm14 0l.9 2.4L22 18l-2.1.6L19 21l-.9-2.4L16 18l2.1-.6L19 15z"/></svg>
+          Insights by NaijaPulse AI
+        </span>
+        <span className="ml-auto text-[11px] font-medium uppercase tracking-wider text-slate-400">Objective Summary</span>
+      </div>
+      <p className="text-[15px] leading-relaxed text-slate-700">{summary}</p>
+      <p className="mt-4 border-t border-line pt-3 text-[11px] leading-relaxed text-slate-400">
+        Synthesised from all covering outlets. NaijaPulse AI summarises; it does not take a side. Always read the source.
+      </p>
+    </div>
+  );
+}
+
+/* ---------- signature: animated bias spectrum ---------- */
+function BiasSpectrumPanel({ dist }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 60);
+    return () => clearTimeout(t);
+  }, []);
+
+  const total = dist.left + dist.center + dist.right;
+  const segs = [
+    { key: "left",   name: "Left",   count: dist.left,   color: LEAN_META.left.color },
+    { key: "center", name: "Center", count: dist.center, color: LEAN_META.center.color },
+    { key: "right",  name: "Right",  count: dist.right,  color: LEAN_META.right.color },
+  ];
+  const pct = (c) => Math.round((c / total) * 100);
+
+  return (
+    <div className="rise flex h-full flex-col rounded-xl2 bg-surface p-6 shadow-card ring-1 ring-line">
+      <div className="mb-1 flex items-baseline justify-between">
+        <h3 className="text-sm font-bold uppercase tracking-wide text-ink">Source Bias</h3>
+        <span className="font-mono text-xs text-muted">{total} articles</span>
+      </div>
+      <p className="mb-5 text-xs text-slate-500">How outlets covering this story lean, left to right.</p>
+
+      {/* the signature stacked bar */}
+      <div className="group flex h-3.5 w-full overflow-hidden rounded-full bg-line ring-1 ring-black/5"
+           role="img" aria-label={`Bias split: Left ${pct(dist.left)}%, Center ${pct(dist.center)}%, Right ${pct(dist.right)}%`}>
+        {segs.map((s) => (
+          <div key={s.key}
+               className="seg group/seg relative h-full first:rounded-l-full last:rounded-r-full hover:opacity-90"
+               style={{ width: mounted ? `${pct(s.count)}%` : "0%", background: s.color }}
+               title={`${s.name}: ${pct(s.count)}% (${s.count} articles)`}>
+            <span className="pointer-events-none absolute inset-0 opacity-0 transition group-hover/seg:opacity-100"></span>
+          </div>
+        ))}
+      </div>
+
+      {/* labels */}
+      <div className="mt-4 grid grid-cols-3 gap-2">
+        {segs.map((s) => (
+          <div key={s.key} className="rounded-xl bg-canvas p-3 ring-1 ring-line">
+            <div className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full" style={{ background: s.color }}></span>
+              <span className="text-xs font-semibold text-ink">{s.name}</span>
+            </div>
+            <div className="mt-1 font-mono text-2xl font-semibold leading-none text-ink">{pct(s.count)}%</div>
+            <div className="mt-1 font-mono text-[11px] text-muted">{s.count} articles</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ---------- one source card ---------- */
+function ArticleCard({ m }) {
+  return (
+    <article className="rise flex flex-col gap-3 rounded-xl2 bg-surface p-5 shadow-card ring-1 ring-line transition hover:-translate-y-0.5 hover:shadow-pop">
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-sm font-bold text-ink">{m.source_name}</span>
+        <LeanBadge lean={m.lean} />
+        <span className="ml-auto font-mono text-[11px] text-slate-400">{timeAgo(m.published_at)}</span>
+      </div>
+
+      <div className="flex flex-wrap gap-1.5">
+        <MetaBadge label="Factuality" value={m.factuality} />
+        <MetaBadge label="Ownership" value={m.ownership} />
+      </div>
+
+      <h4 className="text-base font-bold leading-snug text-ink">{m.title}</h4>
+      <p className="text-sm leading-relaxed text-slate-600">{m.summary}</p>
+
+      <div className="mt-auto pt-1">
+        <ReadButton url={m.url} />
+      </div>
+    </article>
+  );
+}
+
+/* ---------- feed with filter ---------- */
+function Feed({ members }) {
+  const [filter, setFilter] = useState("all");
+  const counts = useMemo(() => ({
+    all: members.length,
+    left: members.filter((m) => m.lean === "left").length,
+    center: members.filter((m) => m.lean === "center").length,
+    right: members.filter((m) => m.lean === "right").length,
+  }), [members]);
+
+  const tabs = [
+    { key: "all", label: "All", color: "#0F172A" },
+    { key: "left", label: "Left Leaning", color: LEAN_META.left.color },
+    { key: "center", label: "Center", color: LEAN_META.center.color },
+    { key: "right", label: "Right Leaning", color: LEAN_META.right.color },
+  ];
+  const shown = filter === "all" ? members : members.filter((m) => m.lean === filter);
+
+  return (
+    <section>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h2 className="text-lg font-extrabold tracking-tight text-ink">
+          {counts.all} outlets covering this story
+        </h2>
+        <div className="flex flex-wrap gap-1 rounded-xl bg-canvas p-1 ring-1 ring-line">
+          {tabs.map((t) => {
+            const active = filter === t.key;
+            return (
+              <button key={t.key} onClick={() => setFilter(t.key)}
+                className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition focus:outline-none focus-visible:ring-2 focus-visible:ring-ink/30 ${
+                  active ? "bg-surface text-ink shadow-sm ring-1 ring-line" : "text-slate-500 hover:text-ink"
+                }`}>
+                {t.key !== "all" && <span className="h-2 w-2 rounded-full" style={{ background: t.color }}></span>}
+                {t.label}
+                <span className="font-mono text-[11px] text-slate-400">{counts[t.key]}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        {shown.map((m, i) => <ArticleCard key={i} m={m} />)}
+      </div>
+      {shown.length === 0 && (
+        <div className="rounded-xl2 bg-surface p-10 text-center text-sm text-slate-400 ring-1 ring-line">
+          No outlets in this lean are shown in this preview.
+        </div>
+      )}
+    </section>
+  );
+}
+
+/* ---------- coverage insights panel ---------- */
+function CoverageInsights({ story }) {
+  const total = story.bias_distribution.left + story.bias_distribution.center + story.bias_distribution.right;
+  const byLean = (lean) => story.members.filter((m) => m.lean === lean).map((m) => m.source_name);
+  const cols = [
+    { key: "left", name: "Left", sources: byLean("left") },
+    { key: "center", name: "Center", sources: byLean("center") },
+    { key: "right", name: "Right", sources: byLean("right") },
+  ];
+  return (
+    <div className="rise flex flex-col gap-5 rounded-xl2 bg-surface p-6 shadow-card ring-1 ring-line">
+      <h3 className="text-sm font-bold uppercase tracking-wide text-ink">Coverage Details</h3>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="rounded-xl bg-canvas p-3 ring-1 ring-line">
+          <div className="font-mono text-2xl font-semibold text-ink">{total}</div>
+          <div className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Total News Sources</div>
+        </div>
+        <div className="rounded-xl bg-canvas p-3 ring-1 ring-line">
+          <div className="font-mono text-sm font-semibold text-ink">{timeAgo(story.last_updated_at)}</div>
+          <div className="text-[11px] font-medium uppercase tracking-wide text-slate-400">Last Updated</div>
+        </div>
+      </div>
+
+      <div>
+        <div className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-400">Publishers by lean</div>
+        <div className="space-y-3">
+          {cols.map((c) => (
+            <div key={c.key}>
+              <div className="mb-1 flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full" style={{ background: LEAN_META[c.key].color }}></span>
+                <span className="text-xs font-semibold text-ink">{c.name}</span>
+                <span className="font-mono text-[11px] text-slate-400">{c.sources.length}</span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {c.sources.map((s) => (
+                  <span key={s} className="rounded-md bg-canvas px-2 py-0.5 text-[11px] font-medium text-slate-600 ring-1 ring-line">{s}</span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <p className="border-t border-line pt-3 text-[11px] leading-relaxed text-slate-400">
+        Leans reflect ownership and editorial pattern — a transparency signal, not a verdict on accuracy.
+      </p>
+    </div>
+  );
+}
+
+/* ---------- page ---------- */
+function StoryPage({ story }) {
+  return (
+    <div className="min-h-screen bg-canvas font-sans text-ink">
+      {/* preview banner */}
+      <div className="bg-lean-ai/10 px-4 py-1.5 text-center text-[11px] font-semibold text-lean-ai">
+        Design preview · sample data — compare against the existing stories page
+      </div>
+
+      <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:py-10">
+        {/* 1. HEADER & META */}
+        <header className="rise">
+          <div className="mb-4 flex flex-wrap gap-2">
+            {story.tags.map((t) => <TagPill key={t}>{t}</TagPill>)}
+          </div>
+          <div className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-xs text-muted">
+            <span>Published {timeAgo(story.published_at)}</span>
+            <span className="text-slate-300">•</span>
+            <span>Updated {timeAgo(story.last_updated_at)}</span>
+          </div>
+          <h1 className="max-w-3xl text-3xl font-extrabold leading-tight tracking-tight text-ink sm:text-4xl lg:text-[2.75rem]">
+            {story.representative_title}
+          </h1>
+        </header>
+
+        {/* 2. HERO: 2-col grid */}
+        <div className="mt-8 grid gap-5 lg:grid-cols-2">
+          <AISummaryCard summary={story.ai_summary} />
+          <BiasSpectrumPanel dist={story.bias_distribution} />
+        </div>
+
+        {/* 3 + 4. FEED + INSIGHTS (desktop: feed + sidebar) */}
+        <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_320px]">
+          <div className="order-2 lg:order-1">
+            <Feed members={story.members} />
+          </div>
+          <aside className="order-1 lg:order-2">
+            <div className="lg:sticky lg:top-6">
+              <CoverageInsights story={story} />
+            </div>
+          </aside>
+        </div>
+
+        <footer className="mt-12 border-t border-line pt-6 text-center text-xs text-slate-400">
+          NaijaPulse · See every side of every Nigerian story · Snapshot as of {fmtTime(story.last_updated_at)}
+        </footer>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<StoryPage story={STORY} />);
+</script>
+</body>
+</html>

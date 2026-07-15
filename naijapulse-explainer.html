@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NaijaPulse — How It Works</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;0,6..72,700;1,6..72,500&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#EFEAE0;
+    --paper-deep:#E6DFCF;
+    --ink:#1B1B18;
+    --ink-soft:#4A473F;
+    --rule:#C9C2B3;
+    --green:#0B6E4F;
+    --green-deep:#08533C;
+    --wire:#B33A2E;
+    --card:#FAF7F0;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    display:flex;
+    justify-content:center;
+    padding:28px 14px 60px;
+  }
+  .sheet{
+    width:100%;
+    max-width:560px;
+    background:var(--paper);
+  }
+
+  /* ---------- Masthead ---------- */
+  .masthead{
+    text-align:center;
+    padding-bottom:18px;
+    border-bottom:3px double var(--ink);
+  }
+  .eyebrow{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color:var(--green-deep);
+    font-weight:700;
+    margin-bottom:8px;
+  }
+  .wordmark{
+    font-family:'Newsreader',serif;
+    font-weight:700;
+    font-size:44px;
+    line-height:1;
+    letter-spacing:-0.01em;
+    margin:0;
+  }
+  .wordmark .pulse{color:var(--wire); font-style:italic; font-weight:500;}
+  .tagline{
+    font-family:'Newsreader',serif;
+    font-style:italic;
+    font-size:15px;
+    color:var(--ink-soft);
+    margin-top:8px;
+  }
+
+  /* ---------- Thesis strip ---------- */
+  .thesis{
+    margin:20px 0 8px;
+    padding:14px 16px;
+    background:var(--ink);
+    color:var(--paper);
+    font-family:'Newsreader',serif;
+    font-size:15.5px;
+    line-height:1.5;
+    text-align:center;
+  }
+  .thesis b{color:#F2C879; font-weight:600;}
+
+  .section-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    text-align:center;
+    margin:26px 0 18px;
+  }
+  .section-label::before,.section-label::after{content:"— — —"; opacity:.4; margin:0 8px;}
+
+  /* ---------- Relay wire + stages ---------- */
+  .relay{
+    position:relative;
+    padding-left:34px;
+  }
+  .relay::before{
+    content:"";
+    position:absolute;
+    left:14px; top:6px; bottom:6px;
+    width:2px;
+    background-image:repeating-linear-gradient(
+      to bottom, var(--rule) 0 6px, transparent 6px 12px
+    );
+  }
+
+  .stage{
+    position:relative;
+    margin-bottom:22px;
+    background:var(--card);
+    border:1px solid var(--rule);
+    border-radius:2px;
+    padding:16px 16px 14px;
+  }
+  .stage-num{
+    position:absolute;
+    left:-34px; top:14px;
+    width:28px; height:28px;
+    border-radius:50%;
+    background:var(--green);
+    color:var(--paper);
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    font-size:13px;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 0 0 4px var(--paper);
+  }
+  .stage-head{
+    display:flex;
+    align-items:baseline;
+    gap:8px;
+    flex-wrap:wrap;
+    margin-bottom:6px;
+  }
+  .stage-role{
+    font-family:'Newsreader',serif;
+    font-weight:700;
+    font-size:19px;
+  }
+  .stage-tag{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:var(--green-deep);
+    background:rgba(11,110,79,0.1);
+    padding:2px 7px;
+    border-radius:20px;
+  }
+  .stage-desc{
+    font-size:14px;
+    line-height:1.55;
+    color:var(--ink);
+  }
+  .stage-example{
+    margin-top:10px;
+    padding:9px 11px;
+    background:var(--paper-deep);
+    border-left:3px solid var(--wire);
+    font-family:'JetBrains Mono',monospace;
+    font-size:11.5px;
+    line-height:1.55;
+    color:var(--ink-soft);
+  }
+  .stage-example b{color:var(--wire); font-weight:700;}
+
+  /* ---------- Closing ---------- */
+  .honest-note{
+    margin-top:8px;
+    padding:14px 16px;
+    border:1px dashed var(--ink-soft);
+    font-size:13px;
+    line-height:1.55;
+    color:var(--ink-soft);
+    background:var(--card);
+  }
+  .honest-note b{color:var(--ink); font-weight:700;}
+
+  .footer{
+    margin-top:28px;
+    padding-top:14px;
+    border-top:3px double var(--ink);
+    text-align:center;
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+  }
+
+  @media (max-width:400px){
+    .wordmark{font-size:36px;}
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="masthead">
+    <div class="eyebrow">Nigeria's News, Fully Accounted For</div>
+    <h1 class="wordmark">Naija<span class="pulse">Pulse</span></h1>
+    <div class="tagline">One newsroom relay, five jobs, zero blind spots</div>
+  </div>
+
+  <div class="thesis">
+    We collect Nigerian news automatically, group everything about one real
+    event into a single story, and then show you <b>whose voice is missing</b>
+    from the coverage — instead of letting you assume it's complete.
+  </div>
+
+  <div class="section-label">How it actually works</div>
+
+  <div class="relay">
+
+    <div class="stage">
+      <div class="stage-num">1</div>
+      <div class="stage-head">
+        <span class="stage-role">The Runner</span>
+        <span class="stage-tag">Ingestion</span>
+      </div>
+      <div class="stage-desc">
+        Every 15–30 minutes, a digital "kid" runs to 10 different Nigerian
+        newsstands — Punch, Vanguard, ThisDay, Premium Times, and more — and
+        grabs whatever's fresh, automatically. No human has to go looking.
+      </div>
+      <div class="stage-example">
+        <b>Real run:</b> collected articles on the Oyo schoolchildren rescue
+        from 4 different outlets within minutes of each publishing.
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="stage-num">2</div>
+      <div class="stage-head">
+        <span class="stage-role">The Translator</span>
+        <span class="stage-tag">Embedding</span>
+      </div>
+      <div class="stage-desc">
+        Two headlines can say the same thing in totally different words. The
+        Translator reads each article and captures what it's <em>actually
+        about</em> — not just the words — so differently-worded coverage of
+        the same event gets recognized as the same event.
+      </div>
+      <div class="stage-example">
+        <b>Real run:</b> "Kidnapped Pupils Freed" and "Oyo Schoolchildren
+        Regain Freedom" — worded nothing alike, correctly understood as the
+        same story.
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="stage-num">3</div>
+      <div class="stage-head">
+        <span class="stage-role">The Twin Spotter</span>
+        <span class="stage-tag">Duplicate detection</span>
+      </div>
+      <div class="stage-desc">
+        A lot of Nigerian news comes from one wire service and gets
+        copy-pasted across five papers. The Twin Spotter catches when
+        outlets are agreeing versus just wearing the same words in a
+        different t-shirt — so five copies never get mistaken for five
+        opinions.
+      </div>
+      <div class="stage-example">
+        <b>Real run:</b> verbatim wire-copy stories on 3 different outlets
+        correctly flagged as one voice, not three.
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="stage-num">4</div>
+      <div class="stage-head">
+        <span class="stage-role">The Sorter</span>
+        <span class="stage-tag">Clustering</span>
+      </div>
+      <div class="stage-desc">
+        Every new article gets filed into the right folder — the real-world
+        event it belongs to — instead of piling up as a wall of near-duplicate
+        headlines. One event, one folder, everybody who covered it in one
+        place.
+      </div>
+      <div class="stage-example">
+        <b>Real run:</b> 232 articles correctly sorted into ~130 real stories
+        — hand-checked accuracy: <b>95%</b>.
+      </div>
+    </div>
+
+    <div class="stage">
+      <div class="stage-num">5</div>
+      <div class="stage-head">
+        <span class="stage-role">The Referee</span>
+        <span class="stage-tag">Bias &amp; blindspot detection</span>
+      </div>
+      <div class="stage-desc">
+        For every story, the Referee checks who's in the room — outlets that
+        tend to side with government, against it, or stay neutral — and
+        flags when only one side of the field showed up to cover something
+        political.
+      </div>
+      <div class="stage-example">
+        <b>Real run:</b> caught an INEC election-deadline story with
+        anti-government coverage present and pro-government coverage
+        completely absent — a real blindspot. Also caught and fixed itself
+        flagging World Cup football as "politically biased" — a football
+        score isn't a government story.
+      </div>
+    </div>
+
+  </div>
+
+  <div class="honest-note">
+    <b>The honest caveat, on purpose:</b> right now the Referee can reliably
+    spot when <em>anti-government</em> coverage dominates, because our current
+    10-source list doesn't yet include a high-volume pro-government-leaning
+    outlet. That's not a flaw in the idea — it's a known, fixable data gap,
+    and knowing exactly where your own blind spot is happens to be a very
+    on-brand thing for a blindspot-detection product to be able to say about
+    itself.
+  </div>
+
+  <div class="footer">Runner → Translator → Twin Spotter → Sorter → Referee</div>
+
+</div>
+</body>
+</html>
